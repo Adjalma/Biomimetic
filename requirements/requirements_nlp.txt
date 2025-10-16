@@ -1,0 +1,11 @@
+# NLP & PROCESSAMENTO DE TEXTO - LOTE 3
+# =========================
+nltk>=3.8.0
+spacy>=3.6.0
+gensim>=4.2.0
+textblob>=0.17.1
+wordcloud>=1.8.1
+chromadb>=0.4.18
+faiss-cpu>=1.7.4
+ragas>=0.0.22
+crewai>=0.11.0 

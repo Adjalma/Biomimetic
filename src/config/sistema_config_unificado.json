@@ -1,0 +1,162 @@
+{
+  "sistema": {
+    "nome": "IA Autoevolutiva Biomimética",
+    "versao": "2.0",
+    "descricao": "Sistema de IA autoevolutiva inspirado em processos biomiméticos naturais",
+    "autor": "Sistema IA Autoevolutiva",
+    "data_criacao": "2024",
+    "ultima_atualizacao": "2024-09-08"
+  },
+  "arquitetura": {
+    "estrutura_principal": {
+      "src/app": "Aplicações principais do sistema",
+      "src/core": "Núcleo da IA evolutiva",
+      "src/faiss_engine": "Sistema FAISS para busca vetorial",
+      "src/knowledge_bus": "Barramento de conhecimento",
+      "src/systems": "Sistemas V2 integrados",
+      "src/pipelines": "Pipelines de processamento",
+      "src/utils": "Utilitários do sistema",
+      "src/config": "Configurações",
+      "src/templates": "Templates HTML"
+    },
+    "storage": {
+      "databases": "Bancos de dados",
+      "logs": "Logs do sistema",
+      "backups": "Backups",
+      "indices": "Índices FAISS",
+      "outputs": "Saídas e relatórios",
+      "models": "Modelos treinados"
+    }
+  },
+  "sistemas_v2": {
+    "guardiao_conhecimento": {
+      "nome": "Guardião de Conhecimento",
+      "funcao": "Protege e gerencia dados críticos",
+      "localizacao": "src/knowledge_bus/guardiao_conhecimento.py",
+      "status": "ativo"
+    },
+    "simulador_contrafactual": {
+      "nome": "Simulador Contrafactual",
+      "funcao": "Testa cenários alternativos",
+      "localizacao": "src/systems/simulador_contrafactual.py",
+      "status": "ativo"
+    },
+    "academia_agentes": {
+      "nome": "Academia de Agentes",
+      "funcao": "Treina e especializa agentes IA",
+      "localizacao": "src/systems/sistemas/academia_agentes.py",
+      "status": "ativo"
+    },
+    "minerador_padroes": {
+      "nome": "Minerador de Padrões",
+      "funcao": "Descobre padrões em dados complexos",
+      "localizacao": "src/pipelines/gerador_procedimentos_academia.py",
+      "status": "ativo"
+    },
+    "gerador_procedimentos": {
+      "nome": "Gerador de Procedimentos",
+      "funcao": "Cria procedimentos automatizados",
+      "localizacao": "src/pipelines/gerador_procedimentos_academia.py",
+      "status": "ativo"
+    }
+  },
+  "configuracoes_evolutivas": {
+    "populacao": {
+      "tamanho": 50,
+      "descricao": "Tamanho da população de indivíduos"
+    },
+    "mutacao": {
+      "taxa": 0.1,
+      "descricao": "Taxa de mutação (10%)"
+    },
+    "crossover": {
+      "taxa": 0.8,
+      "descricao": "Taxa de crossover (80%)"
+    },
+    "evolucao": {
+      "max_geracoes": 100,
+      "limiar_fitness": 0.95,
+      "descricao": "Parâmetros de evolução"
+    }
+  },
+  "dependencias_criticas": [
+    "torch",
+    "numpy",
+    "faiss",
+    "flask",
+    "flask_socketio",
+    "transformers",
+    "sentence_transformers",
+    "chromadb",
+    "pandas",
+    "scikit-learn",
+    "matplotlib",
+    "seaborn",
+    "plotly"
+  ],
+  "pontos_entrada": {
+    "sistema_principal": {
+      "arquivo": "src/app/main.py",
+      "comando": "python iniciar_sistema.py main",
+      "descricao": "Sistema principal da IA autoevolutiva"
+    },
+    "versao_otimizada": {
+      "arquivo": "src/app/main_optimized.py",
+      "comando": "python iniciar_sistema.py optimized",
+      "descricao": "Versão otimizada para hardware dedicado"
+    },
+    "dashboard_gic": {
+      "arquivo": "src/app/app_gic.py",
+      "comando": "python iniciar_sistema.py gic",
+      "descricao": "Dashboard web do GIC"
+    },
+    "gic_ia_integrada": {
+      "arquivo": "src/app/iniciar_gic_ia.py",
+      "comando": "python iniciar_sistema.py gic-ia",
+      "descricao": "GIC com IA autoevolutiva integrada"
+    },
+    "validacao": {
+      "arquivo": "scripts/validar_sistema.py",
+      "comando": "python iniciar_sistema.py validate",
+      "descricao": "Validação completa do sistema"
+    }
+  },
+  "logging": {
+    "nivel": "INFO",
+    "formato": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "arquivos": [
+      "storage/logs/main_system.log",
+      "storage/logs/gic_ia.log",
+      "storage/logs/evolutionary_ai.log",
+      "storage/logs/validacao_sistema.log"
+    ]
+  },
+  "performance": {
+    "otimizacoes": [
+      "Paralelização de operações",
+      "Cache inteligente",
+      "Compressão de dados",
+      "Indexação otimizada"
+    ],
+    "monitoramento": [
+      "Uso de CPU e memória",
+      "Tempo de resposta",
+      "Throughput de processamento",
+      "Qualidade das soluções"
+    ]
+  },
+  "seguranca": {
+    "medidas": [
+      "Criptografia de dados sensíveis",
+      "Controle de acesso baseado em roles",
+      "Auditoria de operações",
+      "Backup automático"
+    ],
+    "dados_protegidos": [
+      "Conhecimento crítico",
+      "Configurações do sistema",
+      "Logs de auditoria",
+      "Modelos treinados"
+    ]
+  }
+}

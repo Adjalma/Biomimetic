@@ -1,0 +1,32 @@
+Título: Resumo do Padrão de Processo PP-1PBR-00387 - Gerir Alterações Contratuais
+
+Este documento delineia o fluxo padrão para gerenciar aditivos e outras alterações em contratos vigentes na Petrobras.
+
+**Princípios Gerais:**
+1.  **Vantajosidade:** Toda alteração contratual deve ser devidamente justificada e comprovar que é a solução mais vantajosa para a Companhia.
+2.  **Legalidade:** As alterações devem respeitar os limites legais, em especial a Lei das Estatais (Lei 13.303/2016) e as normas internas.
+3.  **Formalização:** Toda alteração deve ser formalizada através de um Termo Aditivo.
+
+**Estrutura da Justificativa para Aditivo:**
+Uma justificativa robusta é a peça central do processo e deve conter, no mínimo:
+
+1.  **Introdução e Histórico do Contrato:**
+    *   Apresentar o contrato original (número, objeto, valor, prazo).
+    *   Resumir o histórico de execução e aditivos anteriores, se houver.
+    *   Contextualizar o serviço/fornecimento e sua importância para a Petrobras.
+
+2.  **Do Fato Motivador e da Necessidade do Aditivo:**
+    *   Descrever de forma clara e objetiva o evento ou a necessidade que tornou a alteração imprescindível.
+    *   Explicar por que essa necessidade não pôde ser prevista na época da contratação original.
+    *   Apresentar os fundamentos técnicos e/ou econômicos para a alteração (ex: mudança de escopo, prorrogação de prazo, reajuste de preços).
+
+3.  **Das Alternativas e da Vantajosidade:**
+    *   Analisar outras alternativas à celebração do aditivo (ex: nova licitação, contratação emergencial).
+    *   Demonstrar, com dados, por que a continuidade do contrato atual através do aditivo é a opção mais vantajosa (economica, técnica ou operacionalmente).
+
+4.  **Das Consequências da Não Efetivação do Aditivo:**
+    *   Expor os riscos e impactos negativos caso a alteração não seja aprovada.
+    *   Detalhar prejuízos operacionais, financeiros ou de cronograma para o projeto ou para a área de negócio.
+
+5.  **Conclusão:**
+    *   Recomendar formalmente a aprovação do aditivo, com base nos fatos e análises apresentados. 

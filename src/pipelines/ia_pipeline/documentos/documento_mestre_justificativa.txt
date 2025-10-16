@@ -1,0 +1,38 @@
+Título: Padrão-Ouro de Justificativa (Baseado no Doc. 2000170363)
+
+**Estrutura da Justificativa para Aditivo Contratual**
+
+A justificativa deve ser uma narrativa coesa que endereça múltiplos pontos, conectando as necessidades operacionais com a estratégia da companhia e a vantajosidade da alteração.
+
+**Exemplo Prático (Contrato de Serviços Audiovisuais):**
+
+---
+
+**1. Justificativas para a realização da alteração:**
+
+O aditivo ao contrato [NÚMERO DO CONTRATO] é essencial para atender às demandas estratégicas da [ÁREA CLIENTE, ex: Universidade Petrobras], garantindo a continuidade e a eficiência dos serviços prestados.
+
+**[Argumento 1: Aumento de Quantidade]**
+A ampliação das quantidades nos itens [ITEM DA PPU, ex: 3.10 "Edição – alta complexidade"] e [ITEM DA PPU, ex: 3.15 "Captação de evento"] reflete o aumento significativo da demanda por serviços [TIPO DE SERVIÇO, ex: híbridos e audiovisuais], impulsionado pela [CAUSA EXTERNA/ESTRATÉGICA, ex: transição para modelos de trabalho e educação híbridos]. Essa adequação evita gargalos operacionais e assegura a realização de eventos estratégicos, como o [EXEMPLO DE EVENTO 1, ex: Congresso Petrobras de SMS] e o [EXEMPLO DE EVENTO 2, ex: Onboarding de novos empregados], além de outros eventos que demonstraram elevado consumo das linhas contratadas.
+
+**[Argumento 2: Alteração Técnica sem Custo]**
+A alteração na descrição técnica do item [ITEM DA PPU, ex: 3.25 "Locação de Monitor interativo com suporte"] permite a inclusão de [NOVA TECNOLOGIA, ex: monitores com tecnologias diferenciadas, como resposta háptica, conectividade avançada e integração com plataformas de ensino], ampliando o engajamento e a eficiência no processo de [PROCESSO DE NEGÓCIO, ex: ensino-aprendizagem]. Essa mudança alinha a Petrobras às melhores práticas globais em [ÁREA DE ATUAÇÃO, ex: tecnologia educacional corporativa], sem impacto no valor total estimado do contrato.
+
+**[Argumento 3: Flexibilização Operacional]**
+A remoção da restrição geográfica no item [ITEM DA PPU, ex: 3.27 "Serviços Fotográficos analógico e digital"] possibilita a realização de serviços em qualquer localidade, atendendo à [NECESSIDADE DE NEGÓCIO, ex: regionalização crescente da Universidade Petrobras] e evitando contratações spot, que são mais onerosas e menos eficientes. A inclusão de condições detalhadas para despesas acessórias no item [ITEM DA ESPECIFICAÇÃO, ex: 5.3] assegura a execução dos serviços com eficiência e controle de custos, mantendo a previsibilidade financeira.
+
+**[Argumento 4: Ajustes Contratuais e Flexibilidade]**
+A correção do item [NÚMERO DA CLÁUSULA, ex: 2.1.1 da Cláusula Segunda] ajusta a redação para refletir a data de celebração do contrato, eliminando ambiguidades. A alteração do item [NÚMERO DA CLÁUSULA, ex: 18.5 da Cláusula Décima Oitava] para permitir a subcontratação amplia a flexibilidade operacional sem impacto no valor total estimado.
+
+**[Argumento 5: Análise de Risco e Consequências]**
+A não celebração do aditivo resultaria na interrupção de serviços essenciais, comprometendo o planejamento estratégico da [ÁREA CLIENTE, ex: Universidade Petrobras].
+
+**[Argumento 6: Qualidade do Fornecedor]**
+O fornecedor atual tem demonstrado excelência na prestação dos serviços, com reconhecida qualidade, confiabilidade e capacidade de adaptação. A manutenção do contrato por meio do aditivo é a alternativa mais vantajosa, assegurando a continuidade dos serviços com um parceiro já testado e aprovado, alinhado às exigências e padrões de qualidade da Petrobras.
+
+---
+**2. Análise de Vantajosidade e Preços de Mercado:**
+
+Os preços atualmente praticados, oriundos de processo licitatório, apresentaram [PERCENTUAL, ex: 73,92%] de deságio em relação ao orçamento Petrobras e [PERCENTUAL, ex: 16%] abaixo da segunda classificada.
+
+A análise de aderência, considerando as novas quantidades projetadas, demonstra que a vantajosidade se mantém, ficando [PERCENTUAL, ex: 72,66%] abaixo do orçamento referencial, sem inversão da ordem de classificação do certame. A área técnica ratificou que as premissas do orçamento referencial se mantêm válidas. Esta análise atende ao item [ITEM DA NORMA, ex: 3.8.1, alínea "b", do padrão PP-1PBR-00387]. 

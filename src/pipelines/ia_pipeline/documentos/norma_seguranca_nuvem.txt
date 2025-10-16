@@ -1,0 +1,32 @@
+Este documento resume os requisitos de segurança para o uso de computação em nuvem na Petrobras, conforme o padrão corporativo.
+
+## Seções Principais:
+
+### 3.1.2. Utilização de Computação em Nuvem pela Petrobras
+- **O que pode ir para a nuvem:** Informações públicas, internas, confidenciais e dados pessoais. Essencialmente, quase tudo que não é classificado com grau de sigilo.
+- **O que NÃO pode ir para a nuvem:** Informação classificada em grau de sigilo (ex: Reservado, Secreto, Ultrassecreto).
+- **Uso de nuvem no exterior:** Permitido se não houver oferta similar no Brasil ou se for economicamente mais vantajoso, desde que uma cópia dos dados seja mantida no Brasil e com criptografia forte.
+
+### 3.2. Requisitos de Segurança para SaaS
+- A segurança é baseada na classificação da informação (PÚBLICA, INTERNA, CONFIDENCIAL).
+- O nível mais alto de classificação determina os controles de segurança a serem aplicados.
+- Exceções devem ser aprovadas pela Segurança da Informação (SI).
+
+### 3.3. Interconexão com a Rede Petrobras
+- A conexão entre a nuvem e a rede interna deve ser feita via **circuito dedicado (ExpressRoute/Direct Connect)** ou **VPN site-to-site**.
+- O uso de Firewall em ambos os lados é mandatório, com regras restritivas (`default deny`).
+- Conexões da nuvem para a rede interna (RIC) são permitidas se a nuvem for gerenciada pela Petrobras.
+
+### 3.4. Configurações para AWS e Azure
+- A Petrobras utiliza uma solução de segurança multinuvem para monitoramento.
+- Alertas de criticidade alta devem ser tratados em até 1 mês.
+- **Toda instância/VM deve ter agente de proteção instalado (Microsoft Defender).**
+- Aplicações expostas à Internet devem ser protegidas por um **Web Application Firewall (WAF)**.
+- Logs devem ser retidos por 5 anos.
+- O backup é mandatório e deve seguir as diretrizes corporativas.
+
+### 3.6. Configurações para SAP Cloud Platform (SCP)
+- Existem parâmetros de segurança específicos para o ambiente SAP em nuvem que devem ser aplicados.
+
+### 3.9. Exposição de APIs
+- A exposição de APIs para a Internet deve seguir a Diretriz de Segurança de Aplicações (DI-1PBR-00374). 

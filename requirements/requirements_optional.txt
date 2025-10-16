@@ -1,0 +1,19 @@
+# OPCIONAIS E ESPECIALIZADOS - LOTE 8
+# =========================
+learn2learn>=0.1.7
+higher>=0.2.1
+torch-meta>=1.9.0
+auto-sklearn>=0.15.0
+captum>=0.6.0
+shap>=0.44.0
+lime>=0.2.0.1
+boto3>=1.24.0
+google-cloud-storage>=2.5.0
+azure-storage-blob>=12.14.0
+streamlit>=1.28.0
+dask>=2025.5.1
+plotly>=5.24.1
+docker>=7.1.0
+kubernetes>=33.1.0
+dash>=2.18.2
+ipywidgets>=8.1.7 

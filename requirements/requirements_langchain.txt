@@ -1,0 +1,7 @@
+# FRAMEWORKS AVANCADOS - LOTE 4
+# =========================
+langchain>=0.0.350
+langchain-community>=0.0.10
+langchain-core>=0.1.0
+langgraph>=0.0.20
+langchain-openai>=0.0.2 

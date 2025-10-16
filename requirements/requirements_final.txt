@@ -1,0 +1,31 @@
+# DEPENDENCIAS FINAIS - FUNCIONAIS
+# =========================
+# Removendo learn2learn, higher, torch-meta que causam problemas de compilacao
+# Removendo auto-sklearn que pode ter dependencias complexas
+
+# Visualizacao e analise
+plotly>=5.24.1
+shap>=0.44.0
+lime>=0.2.0.1
+
+# Cloud storage
+boto3>=1.24.0
+google-cloud-storage>=2.5.0
+azure-storage-blob>=12.14.0
+
+# Processamento paralelo
+dask>=2025.5.1
+
+# Interface web
+streamlit>=1.28.0
+dash>=2.18.2
+
+# Widgets para Jupyter
+ipywidgets>=8.1.7
+
+# Container e orquestracao
+docker>=7.1.0
+kubernetes>=33.1.0
+
+# Interpretabilidade
+captum>=0.6.0 

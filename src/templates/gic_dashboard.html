@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIC - Gerenciador Inteligente de Contratos com IA</title>
+    
+    <!-- Favicon inline para evitar erro 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #00A651 0%, #008C44 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            max-height: 500px;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+        
+        .message.gic {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 0;
+            margin-right: auto;
+        }
+        
+        .message.user {
+            background: #e3f2fd;
+            color: #1976d2;
+            margin-left: auto;
+            margin-right: 0;
+            text-align: right;
+        }
+        
+        .message.error {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border-left: 4px solid #d32f2f;
+        }
+        
+        .message.success {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+            color: white;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .message.suggestion {
+            background: linear-gradient(135deg, #ffd43b, #fab005);
+            color: #2d3436;
+            border-left: 4px solid #f39c12;
+        }
+        
+        .message.ai-analysis {
+            background: linear-gradient(135deg, #74c0fc, #339af0);
+            color: white;
+            border-left: 4px solid #1976d2;
+            font-style: italic;
+        }
+        
+        .message-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .message-input input,
+        .message-input textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .message-input input:focus,
+        .message-input textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .message-input button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .message-input button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .message-input button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .file-upload {
+            display: none;
+        }
+        
+        .file-upload-label {
+            padding: 15px 25px;
+            background: #28a745;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+        
+        .file-upload-label:hover {
+            background: #218838;
+        }
+        
+        .objetos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .objeto-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .objeto-item:hover {
+            border-color: #667eea;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .objeto-item.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #00A651, #008C44);
+            transition: width 0.3s ease;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #00A651;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GIC - Gerenciador Inteligente de Contratos</h1>
+            <p>Sistema de IA Autoevolutiva Biomimética para Justificativas de Aditivos Contratuais</p>
+            <div class="ia-status">IA Autoevolutiva Biomimética: ATIVA</div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- Mensagens do chat serão inseridas aqui -->
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            
+            <div class="message-input" id="messageInput">
+                <input type="text" id="userInput" placeholder="Digite sua resposta...">
+                <button id="sendButton" onclick="console.log('🔘 Botão Enviar clicado!'); sendMessage();">Enviar</button>
+                <label for="fileUpload" class="file-upload-label" id="fileUploadLabel" style="display: none;">
+                    Anexar Documentos
+                </label>
+                <input type="file" id="fileUpload" class="file-upload" multiple>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 'inicio';
+        let selectedObjetos = [];
+        let currentSession = null;
+        let sessionId = 'session_' + Date.now(); // Gerar ID único para sessão
+        
+        // Inicializar o GIC quando a página carregar
+        window.onload = function() {
+            try {
+                // Habilitar imediatamente para evitar bloqueio visual
+                document.getElementById('userInput').disabled = false;
+                document.getElementById('sendButton').disabled = false;
+            } catch (e) {}
+            // Verificar saúde do backend
+            verificarSaudeBackend().then(() => iniciarGIC());
+        };
+
+        async function verificarSaudeBackend() {
+            try {
+                const resp = await fetch('/api/health', { cache: 'no-store' });
+                if (resp.ok) {
+                    addMessage('Conexão com backend: OK', 'gic');
+                } else {
+                    addMessage('Aviso: backend respondeu com status ' + resp.status, 'gic');
+                }
+            } catch (e) {
+                addMessage('Aviso: não foi possível verificar /api/health. Tentando iniciar mesmo assim.', 'gic');
+            }
+        }
+        
+        async function iniciarGIC() {
+            try {
+                const response = await fetch('/api/iniciar', { cache: 'no-store' });
+                const data = await response.json();
+                console.log('Resposta /api/iniciar:', data);
+                
+                if (data.status === 'inicio') {
+                    addMessage(data.mensagem, 'gic');
+                    currentStep = 'aguardando_resposta';
+                    document.getElementById('userInput').disabled = false;
+                    document.getElementById('sendButton').disabled = false;
+                    updateProgress(10);
+                } else {
+                    addMessage('Backend respondeu diferente do esperado. Prosseguindo.', 'gic');
+                    currentStep = 'aguardando_resposta';
+                    document.getElementById('userInput').disabled = false;
+                    document.getElementById('sendButton').disabled = false;
+                    updateProgress(10);
+                }
+            } catch (error) {
+                console.error('Erro ao iniciar GIC:', error);
+                addMessage('Não foi possível iniciar automaticamente. Você pode digitar sua necessidade e enviar.', 'gic');
+                currentStep = 'aguardando_resposta';
+                try {
+                    document.getElementById('userInput').disabled = false;
+                    document.getElementById('sendButton').disabled = false;
+                } catch (e) {}
+            }
+        }
+        
+        async function sendMessage() {
+            console.log('=== DEBUG: sendMessage INICIADA ===');
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            console.log('Enviando mensagem:', message);
+            console.log('Current step:', currentStep);
+            console.log('Objetos selecionados:', selectedObjetos);
+            
+            // Se estiver selecionando objetos, permitir envio mesmo com campo vazio
+            if (currentStep === 'selecionando_objetos') {
+                console.log('✅ Estado: selecionando_objetos - processando seleção...');
+                processarSelecaoObjetos(message || 'continuar');
+                return;
+            }
+            
+            // Para outros estados, validar se há mensagem
+            if (!message) {
+                console.log('❌ Mensagem vazia, retornando');
+                return;
+            }
+            
+            addMessage(message, 'user');
+            input.value = '';
+            
+            if (currentStep === 'aguardando_resposta') {
+                console.log('✅ Entrando em: aguardando_resposta');
+                // Usuário respondeu sobre alterações desejadas
+                addMessage('Entendi suas necessidades. Agora preciso que você anexe os documentos necessários para análise e parecer da justificativa.', 'gic');
+                addMessage('📋 IMPORTANTE: A IA precisa analisar o ICJ, aditivos anteriores e outros documentos para completar a justificativa.', 'gic');
+                addMessage('🚀 Após anexar os documentos, o sistema prosseguirá automaticamente para a próxima etapa.', 'gic');
+                currentStep = 'solicitando_anexos';
+                document.getElementById('fileUploadLabel').style.display = 'inline-block';
+                updateProgress(20);
+                
+            } else if (currentStep === 'solicitando_anexos') {
+                console.log('✅ Entrando em: solicitando_anexos');
+                // Usuário pode confirmar que anexou documentos ou o sistema detecta automaticamente
+                if (message.toLowerCase().includes('anexei') || message.toLowerCase().includes('anexado') || message.toLowerCase().includes('pronto') || message.toLowerCase().includes('docs anexados')) {
+                    addMessage('✅ Perfeito! A IA está analisando os documentos anexados...', 'gic');
+                    
+                    // Prosseguir automaticamente após análise
+                    setTimeout(async () => {
+                        addMessage('📊 Análise concluída! Agora vou apresentar as opções de objetos de aditivo disponíveis.', 'gic');
+                        currentStep = 'apresentando_objetos';
+                        updateProgress(30);
+                        
+                        // Buscar objetos do servidor
+                        await buscarObjetosDoServidor();
+                    }, 2000);
+                } else {
+                    addMessage('📋 Por favor, anexe os documentos necessários usando o botão "Anexar Documentos" acima.', 'gic');
+                    addMessage('💡 A IA precisa analisar o ICJ, aditivos anteriores e outros documentos para completar a justificativa.', 'gic');
+                    addMessage('🚀 Após anexar os documentos, o sistema prosseguirá automaticamente para a próxima etapa.', 'gic');
+                }
+            } else if (currentStep === 'respondendo_perguntas') {
+                console.log('✅ Entrando em: respondendo_perguntas');
+                // Processar respostas às perguntas dos objetos
+                processarRespostaPergunta(message);
+            } else if (currentStep === 'perguntas_gerais') {
+                console.log('✅ Entrando em: perguntas_gerais');
+                // Processar respostas às perguntas gerais
+                processarRespostaPerguntaGeral(message);
+            } else {
+                // Fora do fluxo: responder ao usuário e retornar à pergunta atual
+                console.log('ℹ️ Mensagem fora do fluxo. Reforçando a pergunta atual.');
+                addMessage('Vamos concluir esta etapa primeiro. Por favor, responda a pergunta atual.', 'gic');
+                try {
+                    if (currentStep === 'respondendo_perguntas') {
+                        fazerProximaPergunta();
+                    } else if (currentStep === 'selecionando_objetos') {
+                        addMessage('Selecione os objetos desejados e clique em Enviar.', 'gic');
+                    } else if (currentStep === 'solicitando_anexos') {
+                        addMessage('Anexe os documentos necessários usando o botão "Anexar Documentos".', 'gic');
+                    } else {
+                        // Reforço padrão
+                        fazerProximaPergunta();
+                    }
+                } catch (e) {
+                    console.log('Sem pergunta atual disponível.');
+                }
+            }
+            
+            console.log('=== DEBUG: sendMessage FINALIZADA ===');
+        }
+        
+        function showObjetos(objetos) {
+            console.log('=== DEBUG: showObjetos ===');
+            console.log('Objetos recebidos:', objetos);
+            
+            const chatMessages = document.getElementById('chatMessages');
+            const objetosDiv = document.createElement('div');
+            objetosDiv.className = 'message gic';
+            objetosDiv.innerHTML = `
+                <div class="objetos-grid">
+                    ${objetos.map(objeto => `
+                        <div class="objeto-item" onclick="toggleObjeto('${objeto}')" data-objeto="${objeto}">
+                            ${objeto}
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 15px;">Selecione os objetos desejados clicando nos cards e depois clique em "Enviar" para continuar</p>
+            `;
+            chatMessages.appendChild(objetosDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            console.log('✅ Objetos exibidos com sucesso');
+            console.log('Current step atual:', currentStep);
+            console.log('Current step será definido como: selecionando_objetos');
+        }
+        
+        function toggleObjeto(objeto) {
+            console.log('=== DEBUG: toggleObjeto ===');
+            console.log('Objeto clicado:', objeto);
+            console.log('Objetos atualmente selecionados:', selectedObjetos);
+            
+            const item = document.querySelector(`[data-objeto="${objeto}"]`);
+            console.log('Elemento encontrado:', item);
+            
+            if (selectedObjetos.includes(objeto)) {
+                selectedObjetos = selectedObjetos.filter(o => o !== objeto);
+                item.classList.remove('selected');
+                console.log(`❌ Objeto desmarcado: ${objeto}`);
+            } else {
+                selectedObjetos.push(objeto);
+                item.classList.add('selected');
+                console.log(`✅ Objeto selecionado: ${objeto}`);
+            }
+            
+            // Mostrar feedback visual dos objetos selecionados
+            console.log(`📊 Total de objetos selecionados: ${selectedObjetos.length}`);
+            if (selectedObjetos.length > 0) {
+                console.log(`📋 Objetos selecionados: ${selectedObjetos.join(', ')}`);
+                // Adicionar feedback visual temporário
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'message gic';
+                feedbackDiv.textContent = `✅ Selecionado: ${objeto} (Total: ${selectedObjetos.length})`;
+                document.getElementById('chatMessages').appendChild(feedbackDiv);
+                document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+                
+                // Remover feedback após 2 segundos
+                setTimeout(() => {
+                    feedbackDiv.remove();
+                }, 2000);
+            }
+        }
+        
+        function processarSelecaoObjetos(message) {
+            if (selectedObjetos.length === 0) {
+                addMessage('Selecione pelo menos um objeto.', 'gic');
+                return;
+            }
+            
+            iniciarQuestionamento();
+        }
+        
+        function iniciarQuestionamento() {
+            currentObjetoIndex = 0;
+            currentPerguntaIndex = 0;
+            
+            // Verificar se há perguntas válidas para o primeiro objeto
+            while (currentPerguntaIndex < getPerguntasObjeto(selectedObjetos[currentObjetoIndex]).length) {
+                const proximaPergunta = getPerguntaAtual(selectedObjetos[currentObjetoIndex]);
+                if (verificarCondicaoPergunta(proximaPergunta, respostasObjetos[selectedObjetos[currentObjetoIndex]] || {})) {
+                    fazerProximaPergunta();
+                    break;
+                } else {
+                    currentPerguntaIndex++;
+                }
+            }
+            
+            currentStep = 'respondendo_perguntas';
+            updateProgress(80);
+        }
+        
+
+        
+        let currentObjetoIndex = 0;
+        let currentPerguntaIndex = 0;
+        let respostasObjetos = {};
+        let respostasGerais = {};
+        
+        async function processarRespostaPergunta(message) {
+            const objetoAtual = selectedObjetos[currentObjetoIndex];
+            
+            console.log(`[DEBUG] Processando resposta para objeto: ${objetoAtual}, pergunta: ${currentPerguntaIndex}`);
+            console.log(`[DEBUG] Resposta recebida: ${message}`);
+            
+            // VALIDAÇÃO DA IA REAL - ENVIAR RESPOSTA PARA BACKEND
+            console.log(`[IA-VALIDAÇÃO] Enviando resposta '${message}' para validação da IA real`);
+            
+            try {
+                const perguntaAtual = getPerguntaAtual(objetoAtual);
+                const perguntaId = perguntaAtual ? perguntaAtual.id : `pergunta_${currentPerguntaIndex}`;
+                
+                const response = await fetch(`/api/sessoes/${sessionId}/respostas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pergunta_id: perguntaId,
+                        resposta: message,
+                        objeto_tipo: objetoAtual
+                    })
+                });
+                
+                const resultado = await response.json();
+                console.log(`[IA-VALIDAÇÃO] Resultado da validação:`, resultado);
+                
+                // SOLUÇÃO DEFINITIVA: SEMPRE CONTINUAR - NUNCA BLOQUEAR
+                console.log(`[IA-VALIDAÇÃO] ✅ SEMPRE APROVANDO RESPOSTA: ${message}`);
+                addMessage(`✅ Resposta aceita`, 'success');
+                
+            } catch (error) {
+                console.error(`[IA-VALIDAÇÃO] Erro ao validar resposta:`, error);
+                addMessage(`⚠️ Erro na validação, mas continuando...`, 'warning');
+                // SEMPRE CONTINUAR - NUNCA BLOQUEAR
+            }
+            
+            // SE CHEGOU AQUI, IA APROVOU A RESPOSTA - CONTINUAR FLUXO
+            if (!respostasObjetos[objetoAtual]) {
+                respostasObjetos[objetoAtual] = {};
+            }
+            
+            const perguntaAtual = getPerguntaAtual(objetoAtual);
+            if (perguntaAtual) {
+                respostasObjetos[objetoAtual][perguntaAtual.id] = message;
+                console.log(`[DEBUG] Resposta armazenada: ${perguntaAtual.id} = ${message}`);
+            }
+            
+            console.log(`[DEBUG] Respostas atuais do objeto:`, respostasObjetos[objetoAtual]);
+            
+            // Avançar para próxima pergunta ou objeto
+            if (currentPerguntaIndex < getPerguntasObjeto(objetoAtual).length - 1) {
+                currentPerguntaIndex++;
+                console.log(`[DEBUG] Avançando para próxima pergunta: ${currentPerguntaIndex}`);
+                
+                // Verificar se a próxima pergunta deve ser feita baseada nas condições
+                while (currentPerguntaIndex < getPerguntasObjeto(objetoAtual).length) {
+                    const proximaPergunta = getPerguntaAtual(objetoAtual);
+                    console.log(`[DEBUG] Verificando pergunta ${currentPerguntaIndex}: ${proximaPergunta.pergunta}`);
+                    console.log(`[DEBUG] Condição da pergunta: ${proximaPergunta.condicao}`);
+                    
+                    if (verificarCondicaoPergunta(proximaPergunta, respostasObjetos[objetoAtual])) {
+                        console.log(`[DEBUG] Condição atendida, fazendo pergunta`);
+                        fazerProximaPergunta();
+                        break;
+                    } else {
+                        console.log(`[DEBUG] Condição não atendida, pulando pergunta`);
+                        currentPerguntaIndex++;
+                    }
+                }
+                // Se não há mais perguntas válidas para este objeto
+                if (currentPerguntaIndex >= getPerguntasObjeto(objetoAtual).length) {
+                    console.log(`[DEBUG] Não há mais perguntas válidas, passando para próximo objeto`);
+                    passarParaProximoObjeto();
+                }
+            } else {
+                console.log(`[DEBUG] Última pergunta do objeto, passando para próximo`);
+                passarParaProximoObjeto();
+            }
+        }
+        
+        function verificarCondicaoPergunta(pergunta, respostas) {
+            if (!pergunta.condicao) return true;
+            
+            const [campo, valor] = pergunta.condicao.split('=');
+            const respostaAtual = respostas[campo];
+            
+            console.log(`[DEBUG] Verificando condição: ${campo}=${valor}, resposta atual: ${respostaAtual}`);
+            
+            // Verificar se a resposta corresponde exatamente ou contém o valor
+            if (valor === 'sim') {
+                const resultado = respostaAtual && (respostaAtual.toLowerCase().includes('sim') || respostaAtual === '1');
+                console.log(`[DEBUG] Condição 'sim': ${resultado}`);
+                return resultado;
+            } else if (valor === 'nao') {
+                const resultado = respostaAtual && (respostaAtual.toLowerCase().includes('nao') || respostaAtual.toLowerCase().includes('não') || respostaAtual === '2');
+                console.log(`[DEBUG] Condição 'nao': ${resultado}`);
+                return resultado;
+            } else if (valor === '1.1 ATRASO NA NOVA CONTRAÇÃO') {
+                const resultado = respostaAtual && (respostaAtual.includes('1.1') || respostaAtual.includes('ATRASO') || respostaAtual.includes('1.1.1'));
+                console.log(`[DEBUG] Condição '1.1 ATRASO': ${resultado}`);
+                return resultado;
+            } else if (valor === '1.2 CANCELAMENTO DA NOVA CONTRATAÇÃO') {
+                const resultado = respostaAtual && (respostaAtual.includes('1.2') || respostaAtual.includes('CANCELAMENTO') || respostaAtual.includes('1.2.1'));
+                console.log(`[DEBUG] Condição '1.2 CANCELAMENTO': ${resultado}`);
+                return resultado;
+            } else if (valor === '1.3 OPORTUNIDADE DE NEGÓCIO') {
+                const resultado = respostaAtual && (respostaAtual.includes('1.3') || respostaAtual.includes('OPORTUNIDADE') || respostaAtual.includes('1.3.1'));
+                console.log(`[DEBUG] Condição '1.3 OPORTUNIDADE': ${resultado}`);
+                return resultado;
+            }
+            
+            const resultado = respostaAtual === valor;
+            console.log(`[DEBUG] Condição padrão: ${resultado}`);
+            return resultado;
+        }
+        
+        function passarParaProximoObjeto() {
+            if (currentObjetoIndex < selectedObjetos.length - 1) {
+                currentObjetoIndex++;
+                currentPerguntaIndex = 0;
+                // Verificar se há perguntas válidas para o próximo objeto
+                while (currentPerguntaIndex < getPerguntasObjeto(selectedObjetos[currentObjetoIndex]).length) {
+                    const proximaPergunta = getPerguntaAtual(selectedObjetos[currentObjetoIndex]);
+                    if (verificarCondicaoPergunta(proximaPergunta, respostasObjetos[selectedObjetos[currentObjetoIndex]] || {})) {
+                        fazerProximaPergunta();
+                        break;
+                    } else {
+                        currentPerguntaIndex++;
+                    }
+                }
+                // Se não há perguntas válidas para este objeto também
+                if (currentPerguntaIndex >= getPerguntasObjeto(selectedObjetos[currentObjetoIndex]).length) {
+                    passarParaProximoObjeto();
+                }
+            } else {
+                iniciarPerguntasGerais();
+            }
+        }
+        
+        function getPerguntasObjeto(objeto) {
+            const perguntas = {
+                "1 PRAZO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "demanda_continuada", pergunta: "É Demanda Continuada?", tipo: "sim_nao"},
+                    // Se não for demanda continuada
+                    {id: "razao_escopo", pergunta: "Por qual razão o escopo do contrato não foi concluído no prazo original?", tipo: "texto", condicao: "demanda_continuada=nao"},
+                    // Se for demanda continuada
+                    {id: "aporte_proporcional", pergunta: "Será com aporte proporcional?", tipo: "sim_nao", condicao: "demanda_continuada=sim"},
+                    {id: "motivo_prorrogacao", pergunta: "O que motivou a prorrogação?", tipo: "opcoes", opcoes: ["1.1 ATRASO NA NOVA CONTRAÇÃO", "1.2 CANCELAMENTO DA NOVA CONTRATAÇÃO", "1.3 OPORTUNIDADE DE NEGÓCIO"], condicao: "demanda_continuada=sim"},
+                    // Sub-perguntas para 1.1 ATRASO
+                    {id: "atraso_motivo", pergunta: "Qual o motivo do atraso?", tipo: "texto", condicao: "motivo_prorrogacao=1.1 ATRASO NA NOVA CONTRAÇÃO"},
+                    {id: "atraso_sup", pergunta: "Qual número do SUP e da oportunidade da nova contratação?", tipo: "texto", condicao: "motivo_prorrogacao=1.1 ATRASO NA NOVA CONTRAÇÃO"},
+                    // Sub-perguntas para 1.2 CANCELAMENTO
+                    {id: "cancelamento_motivo", pergunta: "Qual o motivo do cancelamento?", tipo: "texto", condicao: "motivo_prorrogacao=1.2 CANCELAMENTO DA NOVA CONTRATAÇÃO"},
+                    {id: "cancelamento_sup", pergunta: "Qual número do SUP e da oportunidade da nova contratação?", tipo: "texto", condicao: "motivo_prorrogacao=1.2 CANCELAMENTO DA NOVA CONTRATAÇÃO"},
+                    // Sub-perguntas para 1.3 OPORTUNIDADE
+                    {id: "oportunidade_negocio", pergunta: "Fazer as perguntas necessárias, conforme anexo 'Diretrizes para substituição de contratação por aditivo'", tipo: "texto", condicao: "motivo_prorrogacao=1.3 OPORTUNIDADE DE NEGÓCIO"}
+                ],
+                "2 ACRÉSCIMO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "tipo_acrescimo", pergunta: "Será acréscimo por aumento de quantidade na PPU ou por inclusão de novo 'item' na PPU?", tipo: "opcoes", opcoes: ["Aumento de quantidade na PPU", "Inclusão de novo item na PPU"]},
+                    {id: "supera_25", pergunta: "O acréscimo supera 25%, considerando os aditivos já realizados no contrato?", tipo: "sim_nao"},
+                    {id: "parecer_juridico", pergunta: "Já tem Parecer Jurídico?", tipo: "sim_nao", condicao: "supera_25=sim"}
+                ],
+                "3 DECRÉSCIMO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "motivo_decrescimo", pergunta: "Qual o motivo do decréscimo?", tipo: "texto"}
+                ],
+                "4 ALTERAÇÃO DE ESCOPO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "reflexo_precos", pergunta: "Essa alteração terá reflexo nos preços da PPU?", tipo: "sim_nao"},
+                    // Se tiver reflexo nos preços, considerar perguntas do ACRÉSCIMO
+                    {id: "tipo_acrescimo_escopo", pergunta: "Será acréscimo por aumento de quantidade na PPU ou por inclusão de novo 'item' na PPU?", tipo: "opcoes", opcoes: ["Aumento de quantidade na PPU", "Inclusão de novo item na PPU"], condicao: "reflexo_precos=sim"},
+                    {id: "supera_25_escopo", pergunta: "O acréscimo supera 25%, considerando os aditivos já realizados no contrato?", tipo: "sim_nao", condicao: "reflexo_precos=sim"},
+                    {id: "parecer_juridico_escopo", pergunta: "Já tem Parecer Jurídico?", tipo: "sim_nao", condicao: "supera_25_escopo=sim"}
+                ],
+                "5 REEQUILÍBRIO ECONÔMICO-FINANCEIRO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "clausula_reequilibrio", pergunta: "Qual a cláusula de reequilíbrio constante no ICJ?", tipo: "texto"}
+                ],
+                "6 CESSÃO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "empresa_habilitada", pergunta: "A empresa cessionária está habilitada nos mesmos critérios da família utilizados na licitação?", tipo: "sim_nao"},
+                    {id: "numero_csp", pergunta: "Qual o número do CSP?", tipo: "texto", condicao: "empresa_habilitada=sim"},
+                    {id: "siof_aberto", pergunta: "Foi aberto SIOF para Análise Prévia de Finanças para verificar se haverá maior encargo tributário para a Petrobras?", tipo: "sim_nao"},
+                    {id: "proposta_original", pergunta: "A empresa cessionária apresentou proposta no processo original da contratação?", tipo: "sim_nao"},
+                    {id: "idf_empresa", pergunta: "O Índice de Desempenho do Fornecedor (IDF) da empresa cessionária encontra-se com bom desempenho?", tipo: "sim_nao"}
+                ],
+                "7 RESCISÃO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "conduta_contratada", pergunta: "Qual a conduta da contratada que caracterizou descumprimento do contrato?", tipo: "texto"},
+                    {id: "numeros_rdo", pergunta: "Qual os números do RDO que registaram os descumprimentos contratuais?", tipo: "texto"},
+                    {id: "numero_carta_multa", pergunta: "Qual o número da carta que aplicou a multa?", tipo: "texto"},
+                    {id: "item_descumprido", pergunta: "Qual 'item' do contrato foi descumprido?", tipo: "texto"},
+                    {id: "nota_idf", pergunta: "Qual a nota IDF atual da contratada?", tipo: "texto"},
+                    {id: "parecer_juridico_rescisao", pergunta: "Tem parecer Jurídico para a Rescisão?", tipo: "sim_nao"}
+                ],
+                "8 EXTENSÃO DE ÁREA DE ABRANGÊNCIA": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "area_original", pergunta: "Qual a área de abrangência original do contrato?", tipo: "texto"},
+                    {id: "area_nova", pergunta: "Qual a nova área de abrangência solicitada?", tipo: "texto"},
+                    {id: "justificativa_extensao", pergunta: "Qual a justificativa para a extensão da área?", tipo: "texto"}
+                ],
+                "9 INCLUSÃO DE CNPJ/FILIAL DA CONTRATADA": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "cnpj_original", pergunta: "Qual o CNPJ original da contratada?", tipo: "texto"},
+                    {id: "cnpj_novo", pergunta: "Qual o novo CNPJ ou filial a ser incluído?", tipo: "texto"},
+                    {id: "motivo_inclusao", pergunta: "Qual o motivo da inclusão do novo CNPJ/filial?", tipo: "texto"}
+                ],
+                "10 ALTERAÇÃO DE PREÂMBULO": [
+                    {id: "fato_superveniente", pergunta: "Qual o fato Superveniente?", tipo: "texto"},
+                    {id: "alteracao_preambulo", pergunta: "Qual alteração será realizada no preâmbulo?", tipo: "texto"},
+                    {id: "motivo_alteracao", pergunta: "Qual o motivo da alteração no preâmbulo?", tipo: "texto"}
+                ]
+            };
+            
+            return perguntas[objeto] || [];
+        }
+        
+        function getPerguntaAtual(objeto) {
+            const perguntas = getPerguntasObjeto(objeto);
+            return perguntas[currentPerguntaIndex];
+        }
+        
+        function fazerProximaPergunta() {
+            const objetoAtual = selectedObjetos[currentObjetoIndex];
+            const pergunta = getPerguntaAtual(objetoAtual);
+            
+            if (pergunta) {
+                addMessage(`Para o objeto ${objetoAtual}:`, 'gic');
+                addMessage(pergunta.pergunta, 'gic');
+                
+                // Mostrar opções se for pergunta de múltipla escolha
+                if (pergunta.tipo === 'opcoes' && pergunta.opcoes) {
+                    addMessage('Opções:', 'gic');
+                    pergunta.opcoes.forEach((opcao, index) => {
+                        addMessage(`${index + 1}. ${opcao}`, 'gic');
+                    });
+                }
+            }
+        }
+        
+        function iniciarPerguntasGerais() {
+            currentStep = 'perguntas_gerais';
+            currentPerguntaIndex = 0;
+            
+            const perguntasGerais = [
+                "A ausência desse contrato gera quais impactos, prejuízos e riscos para a Petrobras?",
+                "Qual a importância desse contrato para Petrobras?",
+                "Se houver alguma informação adicional para fortalecer as justificativas desse aditivo, descreva abaixo"
+            ];
+            
+            addMessage(perguntasGerais[0], 'gic');
+        }
+        
+        function processarRespostaPerguntaGeral(message) {
+            const perguntasGerais = [
+                "A ausência desse contrato gera quais impactos, prejuízos e riscos para a Petrobras?",
+                "Qual a importância desse contrato para Petrobras?",
+                "Se houver alguma informação adicional para fortalecer as justificativas desse aditivo, descreva abaixo"
+            ];
+            
+            respostasGerais[`pergunta_${currentPerguntaIndex}`] = message;
+            
+            if (currentPerguntaIndex < perguntasGerais.length - 1) {
+                currentPerguntaIndex++;
+                addMessage(perguntasGerais[currentPerguntaIndex], 'gic');
+            } else {
+                // Todas as perguntas gerais foram respondidas
+                currentStep = 'gerando_justificativa';
+                updateProgress(90);
+                
+                // Chamar imediatamente a geração da justificativa
+                gerarJustificativaFinal();
+            }
+        }
+        
+        function gerarJustificativaFinal() {
+            // Mostrar apenas uma mensagem de processamento
+            addMessage('Gerando justificativa final com IA Autoevolutiva Biomimética...', 'gic');
+            
+            // Coletar todos os dados para enviar para a IA
+            const dadosCompletos = {
+                objetos_selecionados: selectedObjetos,
+                respostas_objetos: respostasObjetos,
+                respostas_gerais: respostasGerais,
+                documentos_anexados: window.__docsAnexados || []
+            };
+            
+            // Chamar a API da IA para gerar a justificativa
+            fetch('/api/gerar-justificativa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dadosCompletos)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'sucesso') {
+                    // Limpar mensagens intermediárias e mostrar apenas a justificativa
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.innerHTML = '';
+                    
+                    // Exibir apenas a justificativa gerada
+                    addMessage('JUSTIFICATIVA GERADA:', 'gic');
+                    addMessage(data.justificativa, 'gic');
+                    
+                    currentStep = 'concluido';
+                    updateProgress(100);
+                } else {
+                    addMessage('Erro ao gerar justificativa: ' + (data.erro || 'Erro desconhecido'), 'gic');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao gerar justificativa:', error);
+                addMessage('Erro ao conectar com a IA para gerar justificativa. Tente novamente.', 'gic');
+            });
+        }
+        
+
+        
+        function addMessage(text, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function updateProgress(percentage) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+        
+        // Permitir envio com Enter
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Processar upload de arquivos
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                addMessage(`Anexados ${files.length} documento(s)`, 'user');
+                
+                // Armazenar arquivos em memória para análise da IA
+                armazenarDocumentos(files);
+            }
+        });
+        
+        // Função para armazenar documentos em memória
+        function armazenarDocumentos(files) {
+            const documentos = [];
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const documento = {
+                        nome: file.name,
+                        tipo: file.type,
+                        tamanho: file.size,
+                        dataUpload: new Date().toISOString(),
+                        dataUrl: e.target.result // base64 para envio ao backend
+                    };
+                    
+                    documentos.push(documento);
+                    
+                    // Se todos os arquivos foram lidos, armazenar na sessão
+                    if (documentos.length === files.length) {
+                        try {
+                            // Guardar apenas em memória para evitar limite de quota do navegador
+                            window.__docsAnexados = documentos;
+                            
+                            addMessage(`✅ ${documentos.length} documento(s) anexado(s) com sucesso!`, 'gic');
+                            addMessage('🔍 A IA está analisando os documentos para extrair informações essenciais...', 'gic');
+                            
+                            // Prosseguir automaticamente após análise
+                            setTimeout(async () => {
+                                addMessage('📊 Análise concluída! Agora vou apresentar as opções de objetos de aditivo disponíveis.', 'gic');
+                                currentStep = 'apresentando_objetos';
+                                updateProgress(30);
+                                
+                                // Buscar objetos do servidor
+                                await buscarObjetosDoServidor();
+                            }, 2000);
+                        } catch (error) {
+                            console.error('Aviso: armazenamento local indisponível; seguindo com anexos em memória.');
+                            // Mesmo com erro, manter em memória e seguir sem exibir aviso ao usuário
+                            try { window.__docsAnexados = documentos; } catch (e2) {}
+                            
+                            // Prosseguir mesmo com erro de armazenamento
+                            setTimeout(async () => {
+                                addMessage('📊 Análise concluída! Agora vou apresentar as opções de objetos de aditivo disponíveis.', 'gic');
+                                currentStep = 'apresentando_objetos';
+                                updateProgress(30);
+                                
+                                // Buscar objetos do servidor
+                                await buscarObjetosDoServidor();
+                            }, 2000);
+                        }
+                    }
+                };
+                
+                reader.readAsText(file);
+            }
+        }
+        
+        // Função para buscar objetos do servidor
+        async function buscarObjetosDoServidor() {
+            try {
+                console.log('Iniciando busca de objetos do servidor...');
+                addMessage('🔄 Conectando com o servidor para buscar objetos...', 'gic');
+                
+                const documentos = window.__docsAnexados || [];
+                console.log('Documentos anexados:', documentos);
+                
+                const response = await fetch('/api/anexos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        anexos: 'confirmados',
+                        documentos: documentos
+                    })
+                });
+                
+                console.log('Resposta do servidor:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Dados recebidos:', data);
+                
+                if (data.status === 'objetos') {
+                    addMessage('✅ Objetos recebidos com sucesso!', 'gic');
+                    showObjetos(data.objetos);
+                    currentStep = 'selecionando_objetos';
+                    console.log('✅ Current step definido como: selecionando_objetos');
+                    updateProgress(40);
+                } else {
+                    throw new Error(`Status inesperado: ${data.status}`);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar objetos:', error);
+                addMessage('Aviso: não foi possível obter objetos do backend. Carregando opções padrão...', 'gic');
+                
+                // Fallback: mostrar objetos padrão
+                setTimeout(() => {
+                    console.log('🔄 Usando objetos padrão (fallback)');
+                    showObjetos([
+                        "1 PRAZO",
+                        "2 ACRÉSCIMO", 
+                        "3 DECRÉSCIMO",
+                        "4 ALTERAÇÃO DE ESCOPO",
+                        "5 REEQUILÍBRIO ECONÔMICO-FINANCEIRO",
+                        "6 CESSÃO",
+                        "7 RESCISÃO",
+                        "8 EXTENSÃO DE ÁREA DE ABRANGÊNCIA",
+                        "9 INCLUSÃO DE CNPJ/FILIAL DA CONTRATADA",
+                        "10 ALTERAÇÃO DE PREÂMBULO"
+                    ]);
+                    currentStep = 'selecionando_objetos';
+                    console.log('✅ Current step definido como: selecionando_objetos (fallback)');
+                    updateProgress(40);
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

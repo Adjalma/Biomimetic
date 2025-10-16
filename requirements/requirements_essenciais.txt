@@ -1,0 +1,22 @@
+# DEPENDENCIAS ESSENCIAIS - LOTE FINAL
+# =========================
+# Removendo learn2learn, higher, torch-meta que causam problemas de compilacao
+# Removendo auto-sklearn que pode ter dependencias complexas
+# Mantendo apenas as essenciais para o projeto
+
+# Visualizacao e analise
+plotly>=5.24.1
+shap>=0.44.0
+lime>=0.2.0.1
+
+# Cloud storage (se necessario)
+boto3>=1.24.0
+
+# Processamento paralelo
+dask>=2025.5.1
+
+# Interface web (se necessario)
+streamlit>=1.28.0
+
+# Widgets para Jupyter
+ipywidgets>=8.1.7 

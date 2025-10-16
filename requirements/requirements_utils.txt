@@ -1,0 +1,15 @@
+# UTILITARIOS E OUTROS - LOTE 6
+# =========================
+rich>=13.7.0
+loguru>=0.7.0
+python-dotenv>=1.0.0
+jsonschema>=4.17.3
+pydantic>=2.5.0
+marshmallow>=3.19.0
+memory-profiler>=0.61.0
+multiprocessing-logging>=0.3.4
+prometheus-client>=0.19.0
+structlog>=23.2.0
+cryptography>=41.0.0
+python-jose>=3.3.0
+passlib>=1.7.4 

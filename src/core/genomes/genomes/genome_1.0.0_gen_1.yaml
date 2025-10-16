@@ -1,0 +1,190 @@
+agent_graph:
+  nodes:
+  - name: input_processor
+    specialist: maestro
+    type: input
+    description: "Maestro recebe e analisa entrada inicial"
+  - dependencies:
+    - input_processor
+    name: legal_risk_analysis
+    specialist: jurist
+    type: specialist
+    description: "Análise de riscos legais e cláusulas"
+  - dependencies:
+    - input_processor
+    name: financial_analysis
+    specialist: financial
+    type: specialist
+    description: "Análise financeira e numérica"
+  - dependencies:
+    - input_processor
+    name: legal_compliance_check
+    specialist: legal
+    type: specialist
+    description: "Verificação de conformidade legal"
+  - dependencies:
+    - input_processor
+    name: contract_structure_analysis
+    specialist: contract
+    type: specialist
+    description: "Análise estrutural de contratos"
+  - dependencies:
+    - legal_risk_analysis
+    - financial_analysis
+    - legal_compliance_check
+    - contract_structure_analysis
+    name: content_review
+    specialist: reviewer
+    type: specialist
+    description: "Revisão de qualidade e clareza"
+  - dependencies:
+    - content_review
+    name: critical_review
+    specialist: skeptic
+    type: specialist
+    description: "Análise crítica e busca de falhas"
+  - dependencies:
+    - critical_review
+    name: final_synthesis
+    specialist: maestro
+    type: output
+    description: "Síntese final coordenada pelo Maestro"
+base_config:
+  crossover_rate: 0.7
+  enable_meta_learning: true
+  evolution_rate: 0.1
+  hidden_size: 64
+  input_size: 10
+  mutation_rate: 0.05
+  output_size: 1
+  population_size: 50
+curiosity:
+  anomaly_threshold: 0.3
+  enabled: true
+  exploration_rate: 0.1
+  hypothesis_generation: true
+  knowledge_reward_weight: 0.15
+evolution:
+  elite_size: 5
+  extinction_threshold: 0.1
+  generations_per_cycle: 10
+  innovation_rate: 0.05
+  mutation_types:
+  - intensity: 0.05
+    name: parameter_mutation
+    probability: 0.3
+  - intensity: 0.02
+    name: structural_mutation
+    probability: 0.1
+  - intensity: 0.03
+    name: behavioral_mutation
+    probability: 0.2
+  speciation_threshold: 3.0
+fitness_weights:
+  accuracy: 0.4
+  collaboration_score: 0.1
+  knowledge_gain: 0.15
+  time_efficiency: 0.2
+  token_efficiency: 0.15
+meta_learning:
+  adaptation_steps: 3
+  enabled: true
+  few_shot_examples: 5
+  learning_rate: 0.001
+  plasticity_factor: 0.8
+metadata:
+  author: Specialist AI Team
+  created: '2025-07-14'
+  description: "IA Biomimética com Meta-Learning, Evolução Coletiva e 7 Especialistas"
+  last_modified: '2025-09-03T10:15:00.000000'
+  name: BiomimeticEvolutionaryAI_V2
+  version: 2.0.0_gen_1
+  architecture: "Framework C.R.I.A.R. com RAG completo"
+  specialists_count: 7
+  system_type: "Validação Inteligente Contratual"
+monitoring:
+  anomaly_detection: true
+  log_level: INFO
+  performance_tracking: true
+  resource_monitoring: true
+  telemetry_enabled: true
+resilience:
+  auto_recovery: true
+  backup_frequency: every_generation
+  checkpoint_interval: 5
+  rollback_points: 10
+  version_control: true
+specialists:
+  maestro:
+    confidence_threshold: 0.9
+    description: "Orquestrador que coordena os especialistas e define estratégias"
+    fitness_focus: coordination_efficiency
+    max_tokens: 3000
+    name: "Agente Maestro"
+    role: "orchestrator"
+    priority: 1
+  jurist:
+    confidence_threshold: 0.8
+    description: "Especialista em análise de riscos legais e cláusulas contratuais"
+    fitness_focus: legal_accuracy
+    max_tokens: 2000
+    name: "Agente Jurista"
+    role: "legal_specialist"
+    priority: 2
+  financial:
+    confidence_threshold: 0.85
+    description: "Especialista em análise de dados financeiros e numéricos"
+    fitness_focus: financial_precision
+    max_tokens: 1500
+    name: "Agente Financeiro"
+    role: "financial_specialist"
+    priority: 3
+  legal:
+    confidence_threshold: 0.82
+    description: "Especialista em conformidade legal e regulamentações"
+    fitness_focus: legal_compliance
+    max_tokens: 1800
+    name: "Agente Legal"
+    role: "compliance_specialist"
+    priority: 4
+  contract:
+    confidence_threshold: 0.88
+    description: "Especialista em estrutura e análise de contratos"
+    fitness_focus: contract_analysis
+    max_tokens: 2200
+    name: "Agente Contract"
+    role: "contract_specialist"
+    priority: 5
+  reviewer:
+    confidence_threshold: 0.75
+    description: "Especialista em clareza, coesão e gramática"
+    fitness_focus: text_quality
+    max_tokens: 1000
+    name: "Agente Revisor"
+    role: "quality_specialist"
+    priority: 6
+  skeptic:
+    confidence_threshold: 0.7
+    description: "Advogado do diabo - encontra falhas no raciocínio"
+    fitness_focus: critical_analysis
+    max_tokens: 1200
+    name: "Agente Cético"
+    role: "critical_specialist"
+    priority: 7
+tools:
+- cost_weight: 0.1
+  description: "Calculadora Python para express\xF5es matem\xE1ticas"
+  name: python_calculator
+  time_limit_ms: 1000
+- cost_weight: 0.3
+  description: "Busca na web para informa\xE7\xF5es atualizadas"
+  name: web_search
+  time_limit_ms: 5000
+- cost_weight: 0.2
+  description: "An\xE1lise de documentos e extra\xE7\xE3o de informa\xE7\xF5es"
+  name: document_analyzer
+  time_limit_ms: 3000
+- cost_weight: 0.4
+  description: "Avalia\xE7\xE3o de riscos em contratos e documentos"
+  name: risk_assessor
+  time_limit_ms: 4000

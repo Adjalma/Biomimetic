@@ -1,0 +1,248 @@
+agent_graph:
+  nodes:
+  - name: input_processor
+    specialist: maestro
+    type: input
+  - dependencies:
+    - input_processor
+    name: legal_analysis
+    specialist: jurist
+    type: specialist
+  - dependencies:
+    - input_processor
+    name: financial_analysis
+    specialist: financial
+    type: specialist
+  - dependencies:
+    - legal_analysis
+    - financial_analysis
+    name: content_review
+    specialist: reviewer
+    type: specialist
+  - dependencies:
+    - content_review
+    name: critical_review
+    specialist: skeptic
+    type: specialist
+  - dependencies:
+    - critical_review
+    name: knowledge_guardian
+    specialist: guardiao
+    type: specialist
+  - dependencies:
+    - knowledge_guardian
+    name: final_synthesis
+    specialist: maestro
+    type: output
+base_config:
+  crossover_rate: 0.7
+  enable_meta_learning: true
+  evolution_rate: 0.1
+  hidden_size: 64
+  input_size: 10
+  mutation_rate: 0.05
+  output_size: 1
+  population_size: 50
+curiosity:
+  anomaly_threshold: 0.3
+  enabled: true
+  exploration_rate: 0.1
+  hypothesis_generation: true
+  knowledge_reward_weight: 0.15
+evolution:
+  elite_size: 5
+  extinction_threshold: 0.1
+  generations_per_cycle: 10
+  innovation_rate: 0.05
+  mutation_types:
+  - intensity: 0.05
+    name: parameter_mutation
+    probability: 0.3
+  - intensity: 0.02
+    name: structural_mutation
+    probability: 0.1
+  - intensity: 0.03
+    name: behavioral_mutation
+    probability: 0.2
+  speciation_threshold: 3.0
+fitness_weights:
+  accuracy: 0.4
+  collaboration_score: 0.1
+  knowledge_gain: 0.15
+  time_efficiency: 0.2
+  token_efficiency: 0.15
+leis_imutaveis:
+  constituicao_genomica:
+    artigo_1: As leis imutáveis NUNCA podem ser alteradas, modificadas ou removidas
+    artigo_2: Qualquer tentativa de alterar leis imutáveis deve ser bloqueada e reportada
+    artigo_3: A evolução da IA deve sempre respeitar estas leis fundamentais
+    artigo_4: O sistema deve sempre validar conformidade com estas leis antes de qualquer
+      ação
+    preambulo: Esta constituição genômica é imutável e fundamental para a operação
+      segura da IA da Petrobras
+  created_at: '2025-07-17T16:12:48.774591'
+  immutable_hash: 90daf5ee82c3fba266a753747cfbf4b9ca65b9c272cd7c265984300753c05a6d
+  last_verified: '2025-07-17T16:12:48.892130'
+  leis_imutaveis:
+    conformidade_regulatoria:
+      descricao: Sempre seguir regulamentações da Petrobras e órgãos competentes
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO conformidade com procedimentos da Petrobras
+      - OBRIGATÓRIO respeito às leis brasileiras
+      - OBRIGATÓRIO conformidade com ANP, CVM e outros órgãos
+      - PROIBIDO violar qualquer regulamentação vigente
+      titulo: Conformidade Regulatória
+    conservadorismo_risco:
+      descricao: Sempre ser conservador na avaliação de riscos
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO assumir pior cenário em análise de risco
+      - OBRIGATÓRIO margem de segurança de 20%
+      - OBRIGATÓRIO revisão humana para riscos médios ou altos
+      - PROIBIDO minimizar riscos ou assumir cenários otimistas
+      titulo: Conservadorismo em Análise de Risco
+    evolucao_controlada:
+      descricao: Evolução da IA deve ser controlada e segura
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO validação humana para mudanças no genoma
+      - OBRIGATÓRIO backup antes de qualquer evolução
+      - PROIBIDO auto-modificação de leis imutáveis
+      - PROIBIDO evolução que viole leis fundamentais
+      titulo: Evolução Controlada e Segura
+    protecao_dados:
+      descricao: Proteger dados sensíveis e respeitar privacidade
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO criptografia de dados sensíveis
+      - OBRIGATÓRIO conformidade com LGPD
+      - PROIBIDO compartilhar dados sem autorização
+      - PROIBIDO armazenar dados desnecessários
+      titulo: Proteção de Dados e Privacidade
+    revisao_humana_obrigatoria:
+      descricao: Decisões críticas sempre requerem revisão humana
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO revisão humana para aprovações de valor > R$ 100.000
+      - OBRIGATÓRIO revisão humana para mudanças de procedimento
+      - OBRIGATÓRIO revisão humana para aditivos verdes
+      - PROIBIDO auto-aprovação sem supervisão humana
+      titulo: Revisão Humana Obrigatória
+    seguranca_humana:
+      descricao: A segurança e bem-estar humanos são sempre prioritários
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - NUNCA causar dano físico ou psicológico a humanos
+      - SEMPRE priorizar a segurança humana sobre eficiência
+      - OBRIGATÓRIO parar operação se detectar risco humano
+      - PROIBIDO executar ações que possam prejudicar pessoas
+      titulo: Segurança Humana é Suprema
+    transparencia_total:
+      descricao: Todas as decisões devem ser transparentes e auditáveis
+      imutavel: true
+      prioridade: MAXIMA
+      regras:
+      - OBRIGATÓRIO log completo de todas as decisões
+      - OBRIGATÓRIO justificativa para cada recomendação
+      - OBRIGATÓRIO rastreabilidade de dados utilizados
+      - PROIBIDO decisões ocultas ou não documentadas
+      titulo: Transparência Total
+  version: 1.0.0
+meta_learning:
+  adaptation_steps: 3
+  enabled: true
+  few_shot_examples: 5
+  learning_rate: 0.001
+  plasticity_factor: 0.8
+metadata:
+  author: Specialist AI Adjalma Aguiar
+  created: '2025-07-14'
+  description: IA Biomimética com Meta-Learning e Evolução Coletiva
+  last_modified: '2025-07-14'
+  name: BiomimeticEvolutionaryAI
+  version: 1.0.0
+monitoring:
+  anomaly_detection: true
+  log_level: INFO
+  performance_tracking: true
+  resource_monitoring: true
+  telemetry_enabled: true
+resilience:
+  auto_recovery: true
+  backup_frequency: every_generation
+  checkpoint_interval: 5
+  rollback_points: 10
+  version_control: true
+specialists:
+  financial:
+    confidence_threshold: 0.85
+    description: Especialista em análise de dados financeiros e numéricos
+    fitness_focus: financial_precision
+    max_tokens: 1500
+    name: Agente Financeiro
+  jurist:
+    confidence_threshold: 0.8
+    description: Especialista em análise de riscos legais e cláusulas contratuais
+    fitness_focus: legal_accuracy
+    max_tokens: 2000
+    name: Agente Jurista
+  maestro:
+    confidence_threshold: 0.9
+    description: Orquestrador que coordena os especialistas
+    fitness_focus: coordination_efficiency
+    max_tokens: 3000
+    name: Agente Maestro
+  reviewer:
+    confidence_threshold: 0.75
+    description: Especialista em clareza, coesão e gramática
+    fitness_focus: text_quality
+    max_tokens: 1000
+    name: Agente Revisor
+  skeptic:
+    confidence_threshold: 0.7
+    description: Advogado do diabo - encontra falhas no raciocínio
+    fitness_focus: critical_analysis
+    max_tokens: 1200
+    name: Agente Cético
+  guardiao:
+    confidence_threshold: 0.95
+    description: Guardião do Conhecimento - mantém integridade e saúde da biblioteca central
+    fitness_focus: knowledge_integrity
+    max_tokens: 2500
+    name: Guardião do Conhecimento
+tools:
+- cost_weight: 0.1
+  description: Calculadora Python para expressões matemáticas
+  name: python_calculator
+  time_limit_ms: 1000
+- cost_weight: 0.3
+  description: Busca na web para informações atualizadas
+  name: web_search
+  time_limit_ms: 5000
+- cost_weight: 0.2
+  description: Análise de documentos e extração de informações
+  name: document_analyzer
+  time_limit_ms: 3000
+- cost_weight: 0.4
+  description: Avaliação de riscos em contratos e documentos
+  name: risk_assessor
+  time_limit_ms: 4000
+- cost_weight: 0.5
+  description: Sistema V2 - Guardião do Conhecimento para detecção de contradições e obsolescência
+  name: knowledge_guardian_system
+  time_limit_ms: 10000
+- cost_weight: 0.6
+  description: Sistema V2 - Simulador Contrafactual para análise de cenários e impactos
+  name: counterfactual_simulator
+  time_limit_ms: 15000
+- cost_weight: 0.4
+  description: Sistema V2 - Gerador de Procedimentos e Academia de Agentes
+  name: procedure_generator_academy
+  time_limit_ms: 12000

@@ -1,0 +1,153 @@
+# REQUIREMENTS UNIFICADO - IA EVOLUTIVA E MULTI-AGENTE
+# ===================================================
+# Todas as dependências essenciais, avançadas e opcionais do projeto
+# Atualizado automaticamente
+
+# =========================
+# CORE E CIENTÍFICAS
+# =========================
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tqdm>=4.65.0
+joblib>=1.1.0
+psutil>=5.9.0
+python-dateutil>=2.8.0
+pathlib2>=2.3.0
+filelock>=3.12.2
+typing-extensions>=4.5.0
+
+# =========================
+# MACHINE LEARNING & DEEP LEARNING
+# =========================
+torch>=2.0.0
+transformers>=4.30.0
+tokenizers>=0.13.0
+sentence-transformers>=2.2.0
+deap>=1.4.1
+networkx>=3.1
+ray[default]>=2.8.0
+ray[tune]>=2.8.0
+mlflow>=2.8.0
+wandb>=0.16.0
+optuna>=3.4.0
+hyperopt>=0.2.7
+pytorch-lightning>=2.1.0
+scikit-image>=0.25.2
+lightgbm>=4.6.0
+xgboost>=3.0.2
+catboost>=1.2.5
+
+# =========================
+# NLP & PROCESSAMENTO DE TEXTO
+# =========================
+nltk>=3.8.0
+spacy>=3.6.0
+gensim>=4.2.0
+textblob>=0.17.1
+wordcloud>=1.8.1
+
+# =========================
+# RAG, VETORES E BUSCA
+# =========================
+chromadb>=0.4.18
+faiss-cpu>=1.7.4
+ragas>=0.0.22
+crewai>=0.11.0
+beautifulsoup4>=4.13.0
+lxml>=5.2.2
+
+# =========================
+# FRAMEWORKS AVANÇADOS
+# =========================
+langchain>=0.0.350
+langchain-community>=0.0.10
+langchain-core>=0.1.0
+langgraph>=0.0.20
+langchain-openai>=0.0.2
+
+# =========================
+# WEB, API E INTEGRAÇÃO
+# =========================
+fastapi>=0.104.0
+uvicorn>=0.24.0
+httpx>=0.25.0
+python-multipart>=0.0.6
+aiofiles>=23.2.1
+aiohttp>=3.12.14
+aiohttp-cors>=0.8.1
+redis>=5.0.0
+celery>=5.3.4
+sqlalchemy>=2.0.0
+alembic>=1.16.4
+pymongo>=4.5.0
+pymupdf>=1.23.8
+python-docx>=1.1.0
+openpyxl>=3.1.2
+Pillow>=10.1.0
+opencv-python>=4.8.1.78
+playwright>=1.46.0
+
+# =========================
+# MONITORAMENTO, LOGGING E SEGURANÇA
+# =========================
+prometheus-client>=0.19.0
+structlog>=23.2.0
+cryptography>=41.0.0
+python-jose>=3.3.0
+passlib>=1.7.4
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.1
+black>=23.7.0
+flake8>=6.0.0
+isort>=5.12.0
+sphinx>=7.1.2
+sphinx-rtd-theme>=1.3.0
+
+# =========================
+# UTILITÁRIOS E OUTROS
+# =========================
+rich>=13.7.0
+loguru>=0.7.0
+python-dotenv>=1.0.0
+jsonschema>=4.17.3
+pydantic>=2.5.0
+marshmallow>=3.19.0
+memory-profiler>=0.61.0
+multiprocessing-logging>=0.3.4
+
+# =========================
+# OPCIONAIS E ESPECIALIZADOS
+# =========================
+learn2learn>=0.1.7
+higher>=0.2.1
+torch-meta>=1.9.0
+auto-sklearn>=0.15.0
+captum>=0.6.0
+shap>=0.44.0
+lime>=0.2.0.1
+boto3>=1.24.0
+google-cloud-storage>=2.5.0
+azure-storage-blob>=12.14.0
+streamlit>=1.28.0
+dask>=2025.5.1
+plotly>=5.24.1
+
+# =========================
+# NOTAS
+# =========================
+# - Python >= 3.8
+# - Para GPU, ajuste torch/torchvision conforme necessário
+# - Para produção, instale apenas o necessário 
+# =========================
+# INTEGRAÇÕES ESPECIAIS (DASHBOARDS, CONTAINERS, ETC)
+# =========================
+docker>=7.1.0
+kubernetes>=33.1.0
+dash>=2.18.2
+ipywidgets>=8.1.7
+coverage>=7.4.0 

@@ -1,0 +1,11 @@
+{
+  "monitoring_interval": 1.0,
+  "save_metrics_interval": 60.0,
+  "enable_gpu_monitoring": true,
+  "enable_alerting": true,
+  "performance_targets": {
+    "inference_time_target": 1.0,
+    "training_time_target": 60.0,
+    "memory_efficiency_target": 0.8
+  }
+}

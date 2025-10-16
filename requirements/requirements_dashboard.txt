@@ -1,0 +1,17 @@
+# REQUISITOS PARA DASHBOARD IA V2
+# ===============================
+# NOTA: Este arquivo é para referência. O dashboard usa o mesmo
+# ambiente virtual da IA (.venv) que já tem todas as dependências.
+
+# Web Framework (instalado automaticamente se necessário)
+flask>=2.3.0
+flask-socketio>=5.3.0
+python-socketio>=5.8.0
+beautifulsoup4>=4.13.0
+lxml>=5.2.2
+playwright>=1.46.0
+
+# Dependências já disponíveis no ambiente da IA:
+# - numpy, torch, faiss-cpu (já instalados)
+# - Todos os Sistemas V2 (já funcionando)
+# - MainAI e dependências (já funcionando)

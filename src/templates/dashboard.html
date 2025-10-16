@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard GIC - Gerenciador Inteligente de Contratos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .status-value {
+            font-weight: 500;
+            color: #27ae60;
+        }
+        
+        .status-error {
+            color: #e74c3c;
+        }
+        
+        .chat-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chat-container {
+            height: 400px;
+            border: 2px solid #ecf0f1;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        
+        .chat-input input:focus {
+            border-color: #3498db;
+        }
+        
+        .chat-input button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .chat-input button:hover {
+            transform: scale(1.05);
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .bot-message {
+            background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+            color: #2c3e50;
+        }
+        
+        .evolution-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .evolution-controls button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .btn-evolve {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+        
+        .evolution-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Dashboard GIC</h1>
+            <p>Gerenciador Inteligente de Contratos - Sistema de IA Avançado</p>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Status Geral -->
+            <div class="card">
+                <h3>📊 Status Geral</h3>
+                <div id="status-geral">
+                    <div class="loading">Carregando status...</div>
+                </div>
+            </div>
+            
+            <!-- FAISS Status -->
+            <div class="card">
+                <h3>🔍 FAISS Vector Database</h3>
+                <div id="faiss-status">
+                    <div class="loading">Carregando FAISS...</div>
+                </div>
+            </div>
+            
+            <!-- Frameworks -->
+            <div class="card">
+                <h3>⚙️ Frameworks de IA</h3>
+                <div id="frameworks-status">
+                    <div class="loading">Carregando frameworks...</div>
+                </div>
+            </div>
+            
+            <!-- Sistemas V2 -->
+            <div class="card">
+                <h3>🎯 Sistemas V2</h3>
+                <div id="sistemas-v2-status">
+                    <div class="loading">Carregando sistemas V2...</div>
+                </div>
+            </div>
+            
+            <!-- Agentes Especialistas -->
+            <div class="card">
+                <h3>🤖 Agentes Especialistas</h3>
+                <div id="agentes-status">
+                    <div class="loading">Carregando agentes...</div>
+                </div>
+            </div>
+            
+            <!-- Sistemas de Evolução -->
+            <div class="card">
+                <h3>🧬 Sistemas de Evolução</h3>
+                <div id="evolucao-status">
+                    <div class="loading">Carregando evolução...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controles de Evolução -->
+        <div class="card">
+            <h3>🧬 Controle de Evolução</h3>
+            <div class="evolution-controls">
+                <button class="btn-start" onclick="startEvolution()">▶️ Iniciar Evolução</button>
+                <button class="btn-stop" onclick="stopEvolution()">⏹️ Parar Evolução</button>
+                <button class="btn-evolve" onclick="evolveGeneration()">🔄 Executar Geração</button>
+            </div>
+            <div id="evolution-data">
+                <div class="loading">Aguardando dados de evolução...</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="evolutionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Chat IA -->
+        <div class="chat-section">
+            <h3>💬 Chat com IA</h3>
+            <div class="chat-container" id="chat-container">
+                <div class="message bot-message">
+                    Olá! Sou o sistema GIC. Como posso ajudá-lo hoje?
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="Digite sua pergunta..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Socket.IO
+        const socket = io();
+        
+        // Estado global
+        let evolutionChart = null;
+        
+        // Inicializar dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupSocketIO();
+        });
+        
+        function loadDashboardData() {
+            // Carregar status geral
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => updateStatusGeral(data))
+                .catch(error => showError('status-geral', error));
+            
+            // Carregar status FAISS
+            fetch('/api/faiss/status')
+                .then(response => response.json())
+                .then(data => updateFaissStatus(data))
+                .catch(error => showError('faiss-status', error));
+            
+            // Carregar status dos frameworks
+            fetch('/api/frameworks/status')
+                .then(response => response.json())
+                .then(data => updateFrameworksStatus(data))
+                .catch(error => showError('frameworks-status', error));
+            
+            // Carregar status dos agentes
+            fetch('/api/agentes/status')
+                .then(response => response.json())
+                .then(data => updateAgentesStatus(data))
+                .catch(error => showError('agentes-status', error));
+            
+            // Carregar dados de evolução
+            loadEvolutionData();
+        }
+        
+        function updateStatusGeral(data) {
+            const container = document.getElementById('status-geral');
+            container.innerHTML = `
+                <div class="status-item">
+                    <span class="status-label">Status:</span>
+                    <span class="status-value">${data.status}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">FAISS:</span>
+                    <span class="status-value">${data.faiss_loaded ? '✅ Carregado' : '❌ Não carregado'}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Frameworks:</span>
+                    <span class="status-value">${data.frameworks_loaded}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Sistemas V2:</span>
+                    <span class="status-value">${data.sistemas_v2_loaded}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Agentes:</span>
+                    <span class="status-value">${data.agentes_especialistas_loaded}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Evolução:</span>
+                    <span class="status-value">${data.sistemas_evolucao_loaded}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Meta-Learning:</span>
+                    <span class="status-value">${data.meta_learning_loaded ? '✅ Ativo' : '❌ Inativo'}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Total Sistemas:</span>
+                    <span class="status-value">${data.total_sistemas}</span>
+                </div>
+            `;
+        }
+        
+        function updateFaissStatus(data) {
+            const container = document.getElementById('faiss-status');
+            if (data.status === 'loaded') {
+                container.innerHTML = `
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value">✅ Carregado</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Vetores:</span>
+                        <span class="status-value">${data.vector_count.toLocaleString()}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Dimensão:</span>
+                        <span class="status-value">${data.dimension}</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="status-item">
+                        <span class="status-label">Status:</span>
+                        <span class="status-error">❌ ${data.error}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function updateFrameworksStatus(data) {
+            const container = document.getElementById('frameworks-status');
+            container.innerHTML = `
+                <div class="status-item">
+                    <span class="status-label">Total:</span>
+                    <span class="status-value">${data.total_frameworks}</span>
+                </div>
+                ${Object.entries(data.frameworks).map(([nome, info]) => `
+                    <div class="status-item">
+                        <span class="status-label">${nome}:</span>
+                        <span class="status-value">${info.status}</span>
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        function updateAgentesStatus(data) {
+            const container = document.getElementById('agentes-status');
+            container.innerHTML = `
+                <div class="status-item">
+                    <span class="status-label">Total:</span>
+                    <span class="status-value">${data.total_agentes}</span>
+                </div>
+                ${Object.entries(data.agentes).map(([nome, info]) => `
+                    <div class="status-item">
+                        <span class="status-label">${info.nome}:</span>
+                        <span class="status-value">${info.vetores_disponiveis.toLocaleString()} vetores</span>
+                    </div>
+                `).join('')}
+            `;
+        }
+        
+        function loadEvolutionData() {
+            fetch('/api/evolution/data')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError('evolution-data', data.error);
+                        return;
+                    }
+                    updateEvolutionData(data);
+                    createEvolutionChart(data);
+                })
+                .catch(error => showError('evolution-data', error));
+        }
+        
+        function updateEvolutionData(data) {
+            const container = document.getElementById('evolution-data');
+            container.innerHTML = `
+                <div class="status-item">
+                    <span class="status-label">Gerações:</span>
+                    <span class="status-value">${data.generations.length}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">População:</span>
+                    <span class="status-value">${data.population_size}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Status:</span>
+                    <span class="status-value">${data.running ? '🟢 Executando' : '🔴 Parado'}</span>
+                </div>
+            `;
+        }
+        
+        function createEvolutionChart(data) {
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            if (evolutionChart) {
+                evolutionChart.destroy();
+            }
+            
+            evolutionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.generations,
+                    datasets: [{
+                        label: 'Fitness',
+                        data: data.fitness_history,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Controles de evolução
+        function startEvolution() {
+            fetch('/api/evolution/start', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'started') {
+                        showSuccess('Evolução iniciada com sucesso!');
+                        setTimeout(loadEvolutionData, 1000);
+                    } else {
+                        showError('evolution-data', data.error);
+                    }
+                })
+                .catch(error => showError('evolution-data', error));
+        }
+        
+        function stopEvolution() {
+            fetch('/api/evolution/stop', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'stopped') {
+                        showSuccess('Evolução parada com sucesso!');
+                        setTimeout(loadEvolutionData, 1000);
+                    } else {
+                        showError('evolution-data', data.error);
+                    }
+                })
+                .catch(error => showError('evolution-data', error));
+        }
+        
+        function evolveGeneration() {
+            fetch('/api/evolution/evolve', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(`Geração ${data.generation} executada! Melhor fitness: ${data.best_fitness.toFixed(4)}`);
+                        setTimeout(loadEvolutionData, 1000);
+                    } else {
+                        showError('evolution-data', data.error);
+                    }
+                })
+                .catch(error => showError('evolution-data', error));
+        }
+        
+        // Chat
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Adicionar mensagem do usuário
+            addMessage(message, 'user');
+            input.value = '';
+            
+            // Enviar para a API
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.response) {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage('Erro: ' + (data.error || 'Resposta não recebida'), 'bot');
+                }
+            })
+            .catch(error => {
+                addMessage('Erro de conexão: ' + error.message, 'bot');
+            });
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        function addMessage(text, type) {
+            const container = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = text;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // Socket.IO
+        function setupSocketIO() {
+            socket.on('connect', function() {
+                console.log('Conectado ao servidor');
+            });
+            
+            socket.on('disconnect', function() {
+                console.log('Desconectado do servidor');
+            });
+        }
+        
+        // Utilitários
+        function showError(containerId, error) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="error">Erro: ${error}</div>`;
+        }
+        
+        function showSuccess(message) {
+            // Criar notificação temporária
+            const notification = document.createElement('div');
+            notification.className = 'success';
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '1000';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Atualizar dados a cada 30 segundos
+        setInterval(loadDashboardData, 30000);
+    </script>
+</body>
+</html>
