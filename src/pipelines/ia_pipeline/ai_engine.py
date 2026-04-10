@@ -276,11 +276,11 @@ class BiomimeticEvolutionaryAI:
                 if (child1['model'].hidden_size == child2['model'].hidden_size and
                     child1['model'].input_size == child2['model'].input_size and
                     child1['model'].output_size == child2['model'].output_size):
-                    
+
                     for param1, param2 in zip(child1['model'].parameters(), child2['model'].parameters()):
                         if random.random() < 0.5:
                             param1.data, param2.data = param2.data.clone(), param1.data.clone()
-        except Exception as e:
+            except Exception as e:
                 logger.warning(f"Erro no crossover de pesos: {e}")
         
         return child1, child2
@@ -314,7 +314,7 @@ class BiomimeticEvolutionaryAI:
                     complexity=individual['complexity'],
                     plasticity=individual['plasticity']
                 ).to(self.device)
-        except Exception as e:
+            except Exception as e:
                 logger.warning(f"Erro na mutação estrutural: {e}")
     
     def _adaptation_learning(self, individual: Dict):

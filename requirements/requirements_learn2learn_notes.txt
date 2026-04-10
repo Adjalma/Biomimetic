@@ -1,0 +1,20 @@
+# Contorno sem learn2learn (recomendado até haver wheel / MSVC):
+#   O sistema usa BiomimeticMetaLearner em PyTorch (MAML-style) em sistema_meta_learning_biomimetico.py.
+#   META_LEARNING_AVAILABLE fica True sem o pacote; LEARN2LEARN_AVAILABLE só se import learn2learn funcionar.
+#
+# learn2learn (PyPI 0.2.0) no Nexus costuma vir só como .tar.gz (sem wheel win_amd64 cp313).
+# O build compila extensão C: learn2learn.data.meta_dataset
+# Erro típico: "Microsoft Visual C++ 14.0 or greater is required"
+#
+# Pré-requisito Windows:
+#   https://visualstudio.microsoft.com/visual-cpp-build-tools/
+#   Instalar "Desktop development with C++" (ou MSVC + Windows SDK mínimo).
+#
+# Depois (venv ativo, Nexus configurado):
+#   pip install learn2learn
+#
+# Se o resolver puxar numpy 1.26 sdist e falhar: instalar wheel numpy compatível primeiro
+# ou usar Python 3.11 se o mirror tiver mais wheels.
+#
+# Opcional (só se código usar higher/MAML com differentiable optimizers):
+#   pip install higher

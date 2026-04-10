@@ -400,6 +400,13 @@ python scripts/validar_sistema.py
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
+## Bio Console API (CHOKMAH) e integrações
+
+- **API FastAPI:** `src/app/bio_console_api.py`, arranque: `python scripts/run_bio_console_api.py`.
+- **Documentação de integração:** pasta [`docs/bio-console/`](docs/bio-console/) (contrato REST, Z-API WhatsApp, ElevenLabs, Google Meet).
+- **CI:** `.github/workflows/ci.yml` — `compileall` + testes de contrato `tests/test_bio_console_api_contract.py`.
+- **Frontend** (repositório separado [your-app-creator](https://github.com/Adjalma/your-app-creator)): consola Vite que consome `/api/v1`.
+
 ## 👥 Autores
 
 - **Desenvolvedor Principal** - [Adjalma Aguiar](https://github.com/Adjalma)

@@ -1,0 +1,11 @@
+# Ordem recomendada (Nexus + numpy 2.x já no venv):
+#   pip install -r requirements/requirements_xai_minimal.txt
+#   pip install captum --no-deps
+#   python scripts/verify_xai_deps.py
+#
+# Motivo: `pip install captum shap` junto faz o resolver puxar numpy<2 (sdist) → falha sem MSVC.
+# Instalar shap primeiro fixa numpy 2; captum --no-deps usa o ambiente atual.
+#
+# lime (opcional): pip install --default-timeout=120 "lime>=0.2.0.1"
+
+shap>=0.44.0

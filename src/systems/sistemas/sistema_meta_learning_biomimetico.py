@@ -15,9 +15,11 @@ import time
 from typing import Dict, Any, List, Tuple, Optional, Callable
 from datetime import datetime
 import os
+import asyncio
 import copy
 from collections import deque
 import pickle
+import threading
 
 # Orchestration evolution imports
 try:
@@ -27,16 +29,8 @@ except ImportError as e:
     print(f"⚠️ OrchestrationEvolutionEngine não disponível: {e}")
     ORCHESTRATION_EVOLUTION_AVAILABLE = False
 
-# Meta-learning imports
-META_LEARNING_AVAILABLE = False
-try:
-    # learn2learn tem incompatibilidade - comentando temporariamente
-    # import learn2learn as l2l
-    # from higher import innerloop_ctx
-    META_LEARNING_AVAILABLE = False
-    print("⚠️ learn2learn não disponível por incompatibilidade")
-except ImportError:
-    print("⚠️ Meta-learning frameworks não disponíveis")
+# learn2learn: opcional (extensão C no Windows / PyPI só sdist). Este ficheiro NÃO usa APIs
+# l2l — o adaptador meta é BiomimeticMetaLearner (PyTorch). Flags definidos após logger.
 
 # Neuroevolution imports
 NEUROEVOLUTION_AVAILABLE = False
@@ -47,15 +41,23 @@ try:
 except ImportError:
     print("⚠️ Neuroevolution frameworks não disponíveis")
 
-# XAI imports
+# XAI imports — Captum é o necessário para ExplanationEngine (IntegratedGradients).
+# shap/lime são opcionais (lime costuma falhar por timeout/mirror no Nexus corporativo).
 XAI_AVAILABLE = False
+IntegratedGradients = None  # type: ignore[misc, assignment]
 try:
-    import shap
-    import lime
     from captum.attr import IntegratedGradients
     XAI_AVAILABLE = True
 except ImportError:
-    print("⚠️ XAI frameworks não disponíveis")
+    print("⚠️ XAI (captum) não disponível — instale: pip install captum")
+try:
+    import shap  # noqa: F401 — opcional para extensões futuras
+except ImportError:
+    pass
+try:
+    import lime  # noqa: F401 — opcional; muitas vezes problemático em Windows/Nexus
+except ImportError:
+    pass
 
 # IA Local como Cérebro Biomimético
 try:
@@ -77,91 +79,160 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+LEARN2LEARN_AVAILABLE = False
+try:
+    import learn2learn as l2l  # noqa: F401 — opcional; utilitários/datasets não usados aqui
+    LEARN2LEARN_AVAILABLE = True
+except ImportError:
+    logger.info(
+        "learn2learn não instalado (opcional). "
+        "Meta-learning via BiomimeticMetaLearner (PyTorch) segue ativo; "
+        "para o pacote: MSVC Build Tools + pip install learn2learn — ver requirements_learn2learn_notes.txt"
+    )
+
+# Caminho _meta_learning_adaptation usa só PyTorch (inner/outer loop); não exige learn2learn.
+META_LEARNING_AVAILABLE = True
+
+HIGHER_AVAILABLE = False
+try:
+    import higher  # noqa: F401 — FOMAML (gradientes através do inner loop)
+    HIGHER_AVAILABLE = True
+except ImportError:
+    logger.info(
+        "Pacote 'higher' não instalado — meta-learning usa Reptile (outer loop explícito). "
+        "Para FOMAML: pip install higher (ver requirements_meta_learning.txt)."
+    )
+
+
 class BiomimeticMetaLearner:
     """
-    Meta-learner biomimético que aprende a aprender
-    Implementa MAML, Reptile e outros algoritmos meta-learning
+    Meta-learner biomimético (aprender a aprender).
+
+    - Com `higher`: **FOMAML** (first-order MAML) — gradiente do erro na *query* passa aos
+      pesos meta iniciais (inner loop diferenciável).
+    - Sem `higher`: **Reptile** — após adaptação por SGD num clone, θ ← θ + ε(θ_adapt − θ).
+
+    Tarefas: tuplas (support_x, support_y, query_x, query_y) ou legado (x, y) repartido ao meio.
     """
-    
-    def __init__(self, model: nn.Module, meta_lr: float = 0.01, adaptation_steps: int = 5):
+
+    def __init__(
+        self,
+        model: nn.Module,
+        meta_lr: float = 0.01,
+        adaptation_steps: int = 5,
+        inner_lr: float = 0.05,
+        num_classes: int = 128,
+    ):
         self.model = model
         self.meta_lr = meta_lr
+        self.inner_lr = inner_lr
         self.adaptation_steps = adaptation_steps
+        self.num_classes = num_classes
         self.meta_optimizer = torch.optim.Adam(self.model.parameters(), lr=meta_lr)
-        
-        # Histórico de meta-learning
+
         self.meta_history = []
         self.task_performance = {}
         self.knowledge_base = {}
-        
-        # Biomimetic parameters
+
         self.plasticity_rate = 0.1
         self.consolidation_strength = 0.8
         self.forgetting_rate = 0.05
-        
-    def meta_train_step(self, tasks: List[Tuple[torch.Tensor, torch.Tensor]]) -> float:
-        """
-        Meta-training step usando MAML (Model-Agnostic Meta-Learning)
-        """
-        meta_loss = 0.0
-        
-        for task_data, task_labels in tasks:
-            # Clone model for task-specific adaptation
-            adapted_model = copy.deepcopy(self.model)
-            task_optimizer = torch.optim.SGD(adapted_model.parameters(), lr=0.01)
-            
-            # Inner loop - adapt to specific task
-            for _ in range(self.adaptation_steps):
-                task_output = adapted_model(task_data)
-                task_loss = F.cross_entropy(task_output, task_labels)
-                task_optimizer.zero_grad()
-                task_loss.backward()
-                task_optimizer.step()
-            
-            # Outer loop - meta-update
-            meta_output = adapted_model(task_data)
-            meta_task_loss = F.cross_entropy(meta_output, task_labels)
-            meta_loss += meta_task_loss
-        
-        # Meta-optimization
+
+    def _normalize_task(
+        self, task: Tuple[torch.Tensor, ...]
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        if len(task) == 4:
+            sx, sy, qx, qy = task
+            return sx, sy, qx, qy
+        x, y = task[0], task[1]
+        half = max(1, x.size(0) // 2)
+        return x[:half], y[:half], x[half:], y[half:]
+
+    def _fomaml_step(
+        self, tasks: List[Tuple[torch.Tensor, ...]]
+    ) -> float:
+        import higher as higher_pkg
+
+        self.model.train()
         self.meta_optimizer.zero_grad()
-        meta_loss.backward()
+        total_q = None
+        n = 0
+        for raw in tasks:
+            sx, sy, qx, qy = self._normalize_task(raw)
+            inner_opt = torch.optim.SGD(self.model.parameters(), lr=self.inner_lr)
+            with higher_pkg.innerloop_ctx(self.model, inner_opt) as (fmodel, diffopt):
+                for _ in range(self.adaptation_steps):
+                    loss_s = F.cross_entropy(fmodel(sx), sy)
+                    diffopt.step(loss_s)
+                loss_q = F.cross_entropy(fmodel(qx), qy)
+            n += 1
+            total_q = loss_q if total_q is None else total_q + loss_q
+        assert total_q is not None
+        total_q = total_q / n
+        total_q.backward()
         self.meta_optimizer.step()
-        
-        # Record meta-learning progress
-        self.meta_history.append({
-            'timestamp': datetime.now().isoformat(),
-            'meta_loss': meta_loss.item(),
-            'tasks_processed': len(tasks)
-        })
-        
-        return meta_loss.item()
-    
-    def reptile_step(self, tasks: List[Tuple[torch.Tensor, torch.Tensor]]) -> float:
-        """
-        Reptile meta-learning algorithm
-        """
-        reptile_loss = 0.0
-        
-        for task_data, task_labels in tasks:
-            # Task-specific adaptation
-            adapted_model = copy.deepcopy(self.model)
-            task_optimizer = torch.optim.SGD(adapted_model.parameters(), lr=0.01)
-            
+        loss_val = float(total_q.detach().item())
+        self.meta_history.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "meta_loss": loss_val,
+                "tasks_processed": len(tasks),
+                "algorithm": "fomaml",
+            }
+        )
+        return loss_val
+
+    def _reptile_meta_step(
+        self, tasks: List[Tuple[torch.Tensor, ...]]
+    ) -> float:
+        """Reptile: actualização explícita dos pesos meta (sem confundir com Adam no clone)."""
+        self.model.train()
+        scale = self.meta_lr / max(1, len(tasks))
+        last_inner = 0.0
+        for raw in tasks:
+            sx, sy, _, _ = self._normalize_task(raw)
+            adapted = copy.deepcopy(self.model)
+            opt = torch.optim.SGD(adapted.parameters(), lr=self.inner_lr)
             for _ in range(self.adaptation_steps):
-                task_output = adapted_model(task_data)
-                task_loss = F.cross_entropy(task_output, task_labels)
-                task_optimizer.zero_grad()
-                task_loss.backward()
-                task_optimizer.step()
-            
-            # Reptile update: move towards adapted parameters
-            for param, adapted_param in zip(self.model.parameters(), adapted_model.parameters()):
-                param.data += self.meta_lr * (adapted_param.data - param.data)
-            
-            reptile_loss += task_loss.item()
-        
-        return reptile_loss
+                opt.zero_grad()
+                loss = F.cross_entropy(adapted(sx), sy)
+                loss.backward()
+                opt.step()
+                last_inner = float(loss.detach().item())
+            with torch.no_grad():
+                for p_meta, p_adapt in zip(self.model.parameters(), adapted.parameters()):
+                    p_meta.data.add_(scale * (p_adapt.data - p_meta.data))
+        self.meta_history.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "meta_loss": last_inner,
+                "tasks_processed": len(tasks),
+                "algorithm": "reptile",
+            }
+        )
+        return last_inner
+
+    def meta_train_step(self, tasks: List[Tuple[torch.Tensor, ...]]) -> float:
+        """
+        Um passo de meta-treino: FOMAML (higher) ou Reptile.
+        """
+        if not tasks:
+            return 0.0
+        if HIGHER_AVAILABLE:
+            try:
+                return self._fomaml_step(tasks)
+            except Exception as e:
+                logger.warning("FOMAML falhou (%s); fallback Reptile.", e)
+        return self._reptile_meta_step(tasks)
+
+    def reptile_step(self, tasks: List[Tuple[torch.Tensor, ...]]) -> float:
+        """
+        Só Reptile (útil para comparar ou pipelines externos). Não combinar no mesmo batch
+        que meta_train_step com FOMAML.
+        """
+        if not tasks:
+            return 0.0
+        return self._reptile_meta_step(tasks)
     
     def few_shot_adaptation(self, support_data: torch.Tensor, support_labels: torch.Tensor,
                            query_data: torch.Tensor, query_labels: torch.Tensor) -> float:
@@ -218,17 +289,29 @@ class BiomimeticMetaLearner:
         Get meta-learning statistics
         """
         if not self.meta_history:
-            return {}
-        
-        recent_losses = [h['meta_loss'] for h in self.meta_history[-10:]]
-        
+            return {
+                "higher_available": HIGHER_AVAILABLE,
+                "preferred_algorithm": "fomaml" if HIGHER_AVAILABLE else "reptile",
+            }
+
+        recent_losses = [h["meta_loss"] for h in self.meta_history[-10:]]
+        recent_algos = [h.get("algorithm", "?") for h in self.meta_history[-5:]]
+
         return {
-            'avg_meta_loss': np.mean(recent_losses),
-            'meta_loss_trend': np.mean(recent_losses[-5:]) - np.mean(recent_losses[:5]),
-            'total_tasks_processed': sum(h['tasks_processed'] for h in self.meta_history),
-            'knowledge_base_size': len(self.knowledge_base),
-            'adaptation_steps': self.adaptation_steps,
-            'meta_lr': self.meta_lr
+            "avg_meta_loss": float(np.mean(recent_losses)),
+            "meta_loss_trend": float(np.mean(recent_losses[-5:]) - np.mean(recent_losses[:5]))
+            if len(recent_losses) >= 5
+            else 0.0,
+            "total_tasks_processed": int(
+                sum(h["tasks_processed"] for h in self.meta_history)
+            ),
+            "knowledge_base_size": len(self.knowledge_base),
+            "adaptation_steps": self.adaptation_steps,
+            "inner_lr": self.inner_lr,
+            "meta_lr": self.meta_lr,
+            "higher_available": HIGHER_AVAILABLE,
+            "preferred_algorithm": "fomaml" if HIGHER_AVAILABLE else "reptile",
+            "recent_algorithms": recent_algos,
         }
 
 class BiomimeticEvolutionaryEngine:
@@ -500,7 +583,14 @@ class AutoEvolvingAISystem:
         self.evolution_trigger_threshold = 0.1
         self.performance_history = deque(maxlen=100)
         self.architecture_history = []
-        
+        # Episódios do modo agente → cérebro biomimético + ciclos de evolução
+        self._agent_biomimetic_cycle_count = 0
+        self._last_biomimetic_evolution_ts = 0.0
+        # Evolução em segundo plano (não bloquear chat / UI)
+        self._evolution_thread_lock = threading.Lock()
+        self._evolution_worker_running = False
+        self._evolution_queued_task: Optional[Dict[str, Any]] = None
+
         # XAI components
         self.explanation_engine = None
         self.confidence_estimator = None
@@ -562,7 +652,15 @@ class AutoEvolvingAISystem:
         # Initialize local brain if enabled
         if self.use_local_brain:
             try:
-                self.local_brain = HybridBiomimeticSystem(brain_type=self.local_brain_type)
+                lb_kwargs: Dict[str, Any] = {}
+                if self.local_brain_type == "ollama":
+                    lb_kwargs["model"] = os.environ.get("OLLAMA_MODEL", "llama3.1:8b")
+                    lb_kwargs["base_url"] = os.environ.get(
+                        "OLLAMA_BASE_URL", "http://localhost:11434"
+                    )
+                self.local_brain = HybridBiomimeticSystem(
+                    brain_type=self.local_brain_type, **lb_kwargs
+                )
                 logger.info(f"🧠 Cérebro local inicializado (tipo: {self.local_brain_type})")
             except Exception as e:
                 logger.error(f"Erro ao inicializar cérebro local: {e}")
@@ -651,6 +749,23 @@ class AutoEvolvingAISystem:
                 "reasoning": "explicação da decisão"
             }
         """
+        if self.use_local_brain and self.local_brain is not None:
+            try:
+                decision = asyncio.run(self.local_brain.recommend_provider(task_data))
+                if self.orchestration_evolution is not None:
+                    rec = {
+                        k: v
+                        for k, v in decision.items()
+                        if k not in ("hybrid_metadata", "brain_type", "model_used")
+                    }
+                    self.orchestration_evolution.record_recommendation(task_data, rec)
+                logger.info("Recomendação obtida via cérebro local (Ollama ou mock).")
+                return decision
+            except Exception as e:
+                logger.warning(
+                    "Cérebro local falhou (%s); continuando com heurística interna.", e
+                )
+
         task_type = task_data.get("task_type", "text_completion")
         text_length = task_data.get("text_length", 0)
         context = task_data.get("context", {})
@@ -1088,45 +1203,236 @@ class AutoEvolvingAISystem:
             
             if performance_degradation > self.evolution_trigger_threshold:
                 logger.info(f"🔄 Auto-evolução ativada! Degradação: {performance_degradation:.4f}")
-                self._perform_auto_evolution(task_data)
-    
+                self._schedule_gradual_auto_evolution(task_data)
+
+    def ingest_agent_biomimetic_episode(
+        self,
+        task_data: Dict[str, Any],
+        reasoning: str,
+        answer: str,
+    ) -> Dict[str, Any]:
+        """
+        Regista um turno do modo agente no cérebro híbrido e alimenta métricas autoevolutivas.
+
+        O histórico de ``auto_evolve`` com valores estáveis raramente induz ``performance_degradation``;
+        por isso existe também um ciclo periódico agendado com
+        ``_schedule_gradual_auto_evolution`` (intervalo, cooldown, perfil e thread em background).
+        """
+        reasoning = reasoning or ""
+        answer = answer or ""
+        has_reasoning = len(reasoning.strip()) > 0
+        quality = float(
+            min(
+                1.0,
+                0.28
+                + (0.32 if has_reasoning else 0.0)
+                + min(0.38, len(reasoning) / 1400.0)
+                + min(0.22, len(answer) / 2800.0),
+            )
+        )
+        success = len(answer.strip()) >= 8
+        result_payload: Dict[str, Any] = {
+            "success": success,
+            "quality_score": quality,
+            "provider": "local",
+        }
+        if self.use_local_brain and self.local_brain is not None:
+            try:
+                self.local_brain.record_task_result(task_data, result_payload)
+            except Exception as e:
+                logger.warning("record_task_result (episódio agente): %s", e)
+
+        self.auto_evolve(quality, task_data)
+
+        out: Dict[str, Any] = {
+            "quality_score": quality,
+            "biomimetic_feedback_recorded": bool(
+                self.use_local_brain and self.local_brain is not None
+            ),
+            "evolution_cycle_ran": False,
+            "evolution_cycle_scheduled": False,
+        }
+
+        every = int(os.environ.get("AGENT_BIOMIMETIC_EVOLVE_EVERY", "48"))
+        cooldown = float(os.environ.get("AGENT_BIOMIMETIC_EVOLVE_COOLDOWN_SEC", "900"))
+        self._agent_biomimetic_cycle_count += 1
+
+        if every > 0 and self._agent_biomimetic_cycle_count % every == 0:
+            now = time.time()
+            if now - self._last_biomimetic_evolution_ts >= cooldown:
+                self._last_biomimetic_evolution_ts = now
+                try:
+                    self._schedule_gradual_auto_evolution(task_data)
+                    async_on = os.environ.get("AGENT_EVOLUTION_ASYNC", "true").lower() not in (
+                        "0",
+                        "false",
+                        "no",
+                    )
+                    if async_on:
+                        out["evolution_cycle_scheduled"] = True
+                    else:
+                        out["evolution_cycle_ran"] = True
+                except Exception as e:
+                    logger.warning("Ciclo auto-evolução (agente biomimético): %s", e)
+
+        return out
+
+    def get_agent_evolution_snapshot(self) -> Dict[str, Any]:
+        """Estado resumido para observabilidade (API / painel)."""
+        lb_stats = None
+        learn_sz = 0
+        if self.use_local_brain and self.local_brain is not None:
+            lb_stats = self.local_brain.get_performance_stats()
+            learn_sz = self.local_brain.get_learning_history_size()
+        with self._evolution_thread_lock:
+            worker_running = self._evolution_worker_running
+            queued = self._evolution_queued_task is not None
+        profile = os.environ.get("AGENT_EVOLUTION_PROFILE", "minimal").strip().lower()
+        if profile not in ("minimal", "balanced", "full"):
+            profile = "minimal"
+        return {
+            "performance_history_recent": list(self.performance_history)[-25:],
+            "agent_biomimetic_cycles_total": self._agent_biomimetic_cycle_count,
+            "last_biomimetic_evolution_unix": self._last_biomimetic_evolution_ts,
+            "local_brain_performance": lb_stats,
+            "local_brain_learning_entries": learn_sz,
+            "evolve_every_n_agent_episodes": int(
+                os.environ.get("AGENT_BIOMIMETIC_EVOLVE_EVERY", "48")
+            ),
+            "evolve_cooldown_sec": float(
+                os.environ.get("AGENT_BIOMIMETIC_EVOLVE_COOLDOWN_SEC", "900")
+            ),
+            "evolution_worker_running": worker_running,
+            "evolution_queued": queued,
+            "evolution_profile": profile,
+            "evolution_async": os.environ.get("AGENT_EVOLUTION_ASYNC", "true").lower()
+            not in ("0", "false", "no"),
+        }
+
+    def _sleep_evolution_phase(self) -> None:
+        """Pequena pausa entre fases para não monopolizar CPU (uso gradual)."""
+        try:
+            sec = float(os.environ.get("AGENT_EVOLUTION_PHASE_SLEEP_SEC", "0.03"))
+        except ValueError:
+            sec = 0.03
+        if sec > 0:
+            time.sleep(sec)
+
+    def _perform_auto_evolution_profiled(self, task_data: Dict[str, Any]) -> None:
+        """
+        Ciclo autoevolutivo com perfil configurável.
+
+        - **minimal** (default): só meta-learning (MAML/Reptile) — alinhado a “otimização
+          baseada em gradientes” na taxonomia meta-learning / guia biomimético.
+        - **balanced**: + consolidação + “arquitetura” leve, sem geração NEAT pesada.
+        - **full**: meta + neuroevolução + resto (mais custoso; pode picar CPU).
+        """
+        profile = os.environ.get("AGENT_EVOLUTION_PROFILE", "minimal").strip().lower()
+        if profile not in ("minimal", "balanced", "full"):
+            profile = "minimal"
+
+        self._meta_learning_adaptation(
+            task_data, propagate_perf_to_auto_evolve=False
+        )
+        self._sleep_evolution_phase()
+
+        if profile in ("balanced", "full"):
+            self._architecture_evolution()
+            self._sleep_evolution_phase()
+            self._knowledge_consolidation()
+            self._sleep_evolution_phase()
+
+        if profile == "full":
+            self._evolutionary_optimization(task_data)
+
+        logger.info("✅ Auto-evolução concluída (perfil=%s)", profile)
+
+    def _schedule_gradual_auto_evolution(self, task_data: Dict[str, Any]) -> None:
+        """
+        Agenda evolução sem bloquear o pedido HTTP: thread em daemon + fila de 1 slot
+        (coalesce pedidos simultâneos).
+        """
+        sync = os.environ.get("AGENT_EVOLUTION_ASYNC", "true").lower() in (
+            "0",
+            "false",
+            "no",
+        )
+        if sync:
+            try:
+                self._perform_auto_evolution_profiled(dict(task_data))
+            except Exception as e:
+                logger.warning("Auto-evolução síncrona: %s", e)
+            return
+
+        with self._evolution_thread_lock:
+            if self._evolution_worker_running:
+                self._evolution_queued_task = dict(task_data)
+                logger.debug("Evolução em curso; ciclo extra coalescido na fila.")
+                return
+            self._evolution_worker_running = True
+
+        td = dict(task_data)
+
+        def worker() -> None:
+            current: Optional[Dict[str, Any]] = td
+            try:
+                while current is not None:
+                    try:
+                        self._perform_auto_evolution_profiled(current)
+                    except Exception as e:
+                        logger.warning("Ciclo auto-evolução em background: %s", e)
+                    with self._evolution_thread_lock:
+                        nxt = self._evolution_queued_task
+                        self._evolution_queued_task = None
+                        if nxt is None:
+                            self._evolution_worker_running = False
+                            current = None
+                        else:
+                            current = nxt
+            except Exception:
+                with self._evolution_thread_lock:
+                    self._evolution_worker_running = False
+                    self._evolution_queued_task = None
+
+        threading.Thread(
+            target=worker, daemon=True, name="biomimetic-evolution"
+        ).start()
+
     def _perform_auto_evolution(self, task_data: Dict[str, Any]):
-        """
-        Perform auto-evolution process
-        """
-        # 1. Meta-learning adaptation
-        self._meta_learning_adaptation(task_data)
-        
-        # 2. Evolutionary optimization
-        self._evolutionary_optimization(task_data)
-        
-        # 3. Architecture evolution
-        self._architecture_evolution()
-        
-        # 4. Knowledge consolidation
-        self._knowledge_consolidation()
-        
-        logger.info("✅ Auto-evolução concluída")
-    
-    def _meta_learning_adaptation(self, task_data: Dict[str, Any]):
+        """Compatível com chamadas internas antigas: usa perfil + mesma pipeline."""
+        self._perform_auto_evolution_profiled(task_data)
+
+    def _meta_learning_adaptation(
+        self,
+        task_data: Dict[str, Any],
+        *,
+        propagate_perf_to_auto_evolve: bool = True,
+    ):
         """
         Adapt using meta-learning
         """
         if not META_LEARNING_AVAILABLE:
             return
-        
+
         try:
-            # Create few-shot tasks
             tasks = self._create_few_shot_tasks(task_data)
-            
-            # Meta-training
             meta_loss = self.meta_learner.meta_train_step(tasks)
-            
-            # Reptile step
-            reptile_loss = self.meta_learner.reptile_step(tasks)
-            
-            logger.info(f"Meta-learning: loss={meta_loss:.4f}, reptile={reptile_loss:.4f}")
-            
+            algo = (
+                self.meta_learner.meta_history[-1].get("algorithm", "?")
+                if self.meta_learner.meta_history
+                else "?"
+            )
+            # Liga ao ciclo auto-evolutivo: melhor meta-loss => métrica mais alta
+            perf = 1.0 / (1.0 + float(meta_loss))
+            if propagate_perf_to_auto_evolve:
+                self.auto_evolve(perf, task_data)
+            logger.info(
+                "Meta-learning (%s): loss=%.4f, perf_metric=%.4f",
+                algo,
+                meta_loss,
+                perf,
+            )
+
         except Exception as e:
             logger.error(f"Erro no meta-learning: {e}")
     
@@ -1196,18 +1502,47 @@ class AutoEvolvingAISystem:
             )
             logger.info(f"EWC Loss: {ewc_loss:.4f}")
     
-    def _create_few_shot_tasks(self, task_data: Dict[str, Any]) -> List[Tuple[torch.Tensor, torch.Tensor]]:
+    def _create_few_shot_tasks(
+        self, task_data: Dict[str, Any]
+    ) -> List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]]:
         """
-        Create few-shot learning tasks
+        Gera tarefas N-way episódicas (support / query) para meta-treino.
+        Usa seed derivada do contexto para tarefas menos triviais que ruído i.i.d. puro.
         """
-        # Simulate few-shot tasks
+        n_tasks = int(os.environ.get("META_NUM_TASKS", "5"))
+        n_support = int(os.environ.get("META_N_SUPPORT", "8"))
+        n_query = int(os.environ.get("META_N_QUERY", "8"))
+        seed_base = abs(
+            hash(
+                (
+                    task_data.get("task_type", ""),
+                    task_data.get("text_length", 0),
+                    str(task_data.get("context", {})),
+                )
+            )
+        ) % (2**31)
         tasks = []
-        for _ in range(5):
-            # Create synthetic task data
-            task_inputs = torch.randn(10, 512)
-            task_labels = torch.randint(0, 128, (10,))
-            tasks.append((task_inputs, task_labels))
-        
+        n_cls = 128
+        for t in range(n_tasks):
+            g = torch.Generator(device="cpu")
+            g.manual_seed(seed_base + t * 9973)
+            # Protótipo por tarefa + ruído (cada episódio com tendência de classe)
+            proto = torch.randn(512, generator=g)
+            sx = torch.randn(n_support, 512, generator=g) * 0.15 + proto
+            qx = torch.randn(n_query, 512, generator=g) * 0.2 + proto
+            center = int(torch.randint(0, n_cls, (1,), generator=g).item())
+            spread = 3
+            sy = torch.clamp(
+                center + torch.randint(-spread, spread + 1, (n_support,), generator=g),
+                0,
+                n_cls - 1,
+            )
+            qy = torch.clamp(
+                center + torch.randint(-spread, spread + 1, (n_query,), generator=g),
+                0,
+                n_cls - 1,
+            )
+            tasks.append((sx, sy, qx, qy))
         return tasks
     
     def _evaluate_neat_genome(self, genome, task_data: Dict[str, Any]) -> float:
@@ -1263,8 +1598,10 @@ class AutoEvolvingAISystem:
             'architecture_history': len(self.architecture_history),
             'frameworks_available': {
                 'meta_learning': META_LEARNING_AVAILABLE,
+                'higher_fomaml': HIGHER_AVAILABLE,
+                'learn2learn': LEARN2LEARN_AVAILABLE,
                 'neuroevolution': NEUROEVOLUTION_AVAILABLE,
-                'xai': XAI_AVAILABLE
+                'xai': XAI_AVAILABLE,
             }
         }
         
@@ -1304,6 +1641,8 @@ class ExplanationEngine:
     
     def __init__(self, model: nn.Module):
         self.model = model
+        if IntegratedGradients is None:
+            raise RuntimeError("Captum (IntegratedGradients) não está disponível")
         self.integrated_gradients = IntegratedGradients(model)
     
     def explain_prediction(self, input_data: torch.Tensor, target_class: int = None) -> Dict[str, Any]:

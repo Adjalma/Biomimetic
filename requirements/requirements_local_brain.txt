@@ -1,0 +1,2 @@
+# HTTP para OllamaBrain (GET /api/tags, POST /api/generate)
+requests>=2.28.0

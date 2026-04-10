@@ -203,10 +203,11 @@ class OllamaBrain:
     Requer Ollama instalado e rodando em localhost:11434.
     """
     
-    def __init__(self, model: str = "llama3:8b", base_url: str = "http://localhost:11434"):
+    def __init__(self, model: str = "llama3.1:8b", base_url: str = "http://localhost:11434"):
         self.model = model
         self.base_url = base_url
         self.available = False
+        self.learning_history: List[Dict[str, Any]] = []
         self._check_availability()
     
     def _check_availability(self):
@@ -279,7 +280,22 @@ class OllamaBrain:
             logger.error(f"Erro ao consultar Ollama: {e}")
             fallback_brain = MockLocalBrain("Ollama-Error-Fallback")
             return await fallback_brain.analyze_task(task_data)
-    
+
+    def learn_from_feedback(self, task_data: Dict[str, Any], result: Dict[str, Any]) -> None:
+        """Acumula feedback de episódios (ex.: agente CHOKMAH) para continuidade biomimética."""
+        self.learning_history.append(
+            {
+                "task": task_data,
+                "result": result,
+                "timestamp": time.time(),
+            }
+        )
+        if len(self.learning_history) % 12 == 0:
+            logger.info(
+                "🧬 OllamaBrain: %d entradas de feedback (agente evolutivo)",
+                len(self.learning_history),
+            )
+
     def _create_decision_prompt(self, task_data: Dict[str, Any]) -> str:
         """Cria prompt estruturado para o modelo tomar decisão"""
         task_type = task_data.get("task_type", "text_completion")
@@ -386,7 +402,7 @@ class HybridBiomimeticSystem:
     def _initialize_brain(self, brain_type: str, kwargs: Dict[str, Any]):
         """Inicializa o cérebro baseado no tipo"""
         if brain_type == "ollama":
-            model = kwargs.get("model", "llama3:8b")
+            model = kwargs.get("model", "llama3.1:8b")
             base_url = kwargs.get("base_url", "http://localhost:11434")
             brain = OllamaBrain(model=model, base_url=base_url)
             if brain.available:

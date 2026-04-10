@@ -1,0 +1,9 @@
+# Meta-learning "serio" (FOMAML) — biblioteca pura Python sobre PyTorch
+higher>=0.2.1
+
+# Sem este ficheiro: o sistema usa Reptile (outer loop explicito), igualmente valido.
+
+# Opcional — ajustar episodios sinteticos:
+# META_NUM_TASKS=5
+# META_N_SUPPORT=8
+# META_N_QUERY=8
