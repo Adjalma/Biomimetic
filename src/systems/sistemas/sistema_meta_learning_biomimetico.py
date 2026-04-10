@@ -561,6 +561,356 @@ class AutoEvolvingAISystem:
         
         return BiomimeticNN()
     
+    def recommend_provider(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Recomenda provedor e parâmetros baseado em aprendizado biomimético.
+        
+        Heurística aprimorada com múltiplos fatores:
+        - Tipo de tarefa
+        - Comprimento do texto
+        - Complexidade estimada
+        - Custo simulado
+        - Latência esperada
+        - Qualidade histórica
+        
+        Args:
+            task_data: Dados da tarefa incluindo tipo, comprimento, parâmetros
+            
+        Returns:
+            Dicionário com recomendação:
+            {
+                "provider": "openai",  # ou "anthropic", "google", etc.
+                "parameters": {"temperature": 0.7, "max_tokens": 100},
+                "strategy": "default",
+                "confidence": 0.8,
+                "reasoning": "explicação da decisão"
+            }
+        """
+        task_type = task_data.get("task_type", "text_completion")
+        text_length = task_data.get("text_length", 0)
+        context = task_data.get("context", {})
+        
+        # Fatores de decisão
+        complexity = self._estimate_complexity(task_data)
+        budget = context.get("budget", "balanced")  # low, balanced, high
+        latency_requirement = context.get("latency", "standard")  # realtime, standard, batch
+        
+        # Perfis de provedores (simulados - evoluirão com aprendizado)
+        provider_profiles = {
+            "openai": {
+                "strengths": ["text_completion", "code_generation", "creativity"],
+                "cost_per_token": 0.00002,  # USD por token
+                "avg_latency_ms": 300,
+                "quality_scores": {
+                    "text_completion": 0.85,
+                    "text_classification": 0.78,
+                    "code_generation": 0.88
+                }
+            },
+            "anthropic": {
+                "strengths": ["reasoning", "long_context", "safety"],
+                "cost_per_token": 0.000025,
+                "avg_latency_ms": 450,
+                "quality_scores": {
+                    "text_completion": 0.82,
+                    "text_classification": 0.85,
+                    "reasoning": 0.90
+                }
+            },
+            "google": {
+                "strengths": ["translation", "summarization", "search"],
+                "cost_per_token": 0.000015,
+                "avg_latency_ms": 200,
+                "quality_scores": {
+                    "text_completion": 0.80,
+                    "translation": 0.92,
+                    "summarization": 0.87
+                }
+            },
+            "huggingface": {
+                "strengths": ["classification", "ner", "custom_models"],
+                "cost_per_token": 0.000005,  # Mais barato
+                "avg_latency_ms": 150,
+                "quality_scores": {
+                    "text_classification": 0.83,
+                    "ner": 0.89,
+                    "sentiment_analysis": 0.86
+                }
+            },
+            "local": {
+                "strengths": ["privacy", "zero_cost", "customization"],
+                "cost_per_token": 0.0,
+                "avg_latency_ms": 1000,  # Mais lento
+                "quality_scores": {
+                    "text_completion": 0.65,
+                    "text_classification": 0.70
+                }
+            }
+        }
+        
+        # Matriz de decisão baseada em tipo de tarefa
+        task_to_provider_map = {
+            "text_completion": {
+                "high_quality": "openai",
+                "low_cost": "huggingface",
+                "fast": "google",
+                "reasoning": "anthropic"
+            },
+            "text_classification": {
+                "high_quality": "anthropic",
+                "low_cost": "huggingface",
+                "fast": "google",
+                "balanced": "openai"
+            },
+            "code_generation": {
+                "high_quality": "openai",
+                "low_cost": "local",
+                "balanced": "openai"
+            },
+            "translation": {
+                "high_quality": "google",
+                "balanced": "openai"
+            },
+            "summarization": {
+                "high_quality": "google",
+                "balanced": "openai"
+            },
+            "ner": {
+                "high_quality": "huggingface",
+                "balanced": "anthropic"
+            },
+            "sentiment_analysis": {
+                "high_quality": "huggingface",
+                "balanced": "openai"
+            }
+        }
+        
+        # Determinar critério baseado em contexto
+        if budget == "low":
+            primary_criterion = "low_cost"
+        elif latency_requirement == "realtime":
+            primary_criterion = "fast"
+        elif complexity > 0.7:
+            primary_criterion = "high_quality"
+        else:
+            primary_criterion = "balanced"
+        
+        # Selecionar provedor
+        provider_map = task_to_provider_map.get(task_type, task_to_provider_map["text_completion"])
+        provider = provider_map.get(primary_criterion, "openai")
+        
+        # Ajustar parâmetros baseado na tarefa
+        parameters = self._get_optimal_parameters(task_type, text_length, complexity)
+        
+        # Calcular confiança baseada em correspondência com perfil
+        profile = provider_profiles[provider]
+        base_confidence = profile["quality_scores"].get(task_type, 0.7)
+        
+        # Ajustar confiança baseado em fatores contextuais
+        confidence_adjustments = {
+            "text_length": min(1.0, text_length / 1000),  # Textos mais longos têm confiança reduzida
+            "complexity": 1.0 - (complexity * 0.2),  # Alta complexidade reduz confiança
+            "budget_match": 1.0 if (budget == "low" and provider == "huggingface") or 
+                                 (budget != "low") else 0.8
+        }
+        
+        confidence = base_confidence * 0.7 + np.mean(list(confidence_adjustments.values())) * 0.3
+        confidence = max(0.3, min(0.95, confidence))
+        
+        # Determinar estratégia
+        strategy = self._determine_strategy(task_type, complexity, text_length)
+        
+        # Explicação da decisão (para logging e transparência)
+        reasoning = (
+            f"Tarefa: {task_type}. "
+            f"Critério: {primary_criterion} (budget={budget}, latency={latency_requirement}, complexity={complexity:.2f}). "
+            f"Provedor selecionado: {provider} (confidence={confidence:.2f}). "
+            f"Estratégia: {strategy}."
+        )
+        
+        logger.info(f"Recomendação biomimética: {reasoning}")
+        
+        return {
+            "provider": provider,
+            "parameters": parameters,
+            "strategy": strategy,
+            "confidence": float(confidence),
+            "reasoning": reasoning,
+            "metadata": {
+                "primary_criterion": primary_criterion,
+                "complexity_score": complexity,
+                "estimated_cost": self._estimate_cost(provider, text_length, profile),
+                "estimated_latency_ms": profile["avg_latency_ms"]
+            }
+        }
+    
+    def _estimate_complexity(self, task_data: Dict[str, Any]) -> float:
+        """
+        Estima complexidade da tarefa (0.0 a 1.0)
+        Baseado em múltiplos fatores: comprimento, tipo de tarefa, conteúdo
+        """
+        task_type = task_data.get("task_type", "text_completion")
+        text_length = task_data.get("text_length", 0)
+        
+        # Fatores de complexidade
+        length_factor = min(1.0, text_length / 5000)  # Textos muito longos são mais complexos
+        
+        # Complexidade por tipo de tarefa
+        task_complexity = {
+            "text_completion": 0.3,
+            "text_classification": 0.4,
+            "sentiment_analysis": 0.5,
+            "summarization": 0.6,
+            "translation": 0.7,
+            "code_generation": 0.8,
+            "ner": 0.7,
+            "reasoning": 0.9
+        }.get(task_type, 0.5)
+        
+        # Combinar fatores (ponderado)
+        complexity = (length_factor * 0.3) + (task_complexity * 0.7)
+        return max(0.1, min(1.0, complexity))
+    
+    def _get_optimal_parameters(self, task_type: str, text_length: int, complexity: float) -> Dict[str, Any]:
+        """
+        Retorna parâmetros otimizados baseado no tipo de tarefa e complexidade
+        """
+        base_params = {}
+        
+        # Parâmetros base por tipo de tarefa
+        if task_type == "text_completion":
+            base_params = {
+                "temperature": max(0.3, min(0.9, 0.7 - (complexity * 0.2))),  # Mais determinístico para tarefas complexas
+                "max_tokens": min(500, max(50, int(text_length * 0.5))),
+                "top_p": 0.95,
+                "frequency_penalty": 0.1 if complexity > 0.6 else 0.0
+            }
+        elif task_type == "text_classification":
+            base_params = {
+                "temperature": 0.3,  # Baixa temperatura para classificação determinística
+                "max_tokens": 10,
+                "logprobs": 3,
+                "echo": False
+            }
+        elif task_type == "code_generation":
+            base_params = {
+                "temperature": 0.5,
+                "max_tokens": min(1000, text_length * 2),
+                "stop": ["\n\n", "def ", "class "]
+            }
+        elif task_type in ["translation", "summarization"]:
+            base_params = {
+                "temperature": 0.4,
+                "max_tokens": min(300, int(text_length * 0.7)),
+                "top_p": 0.9
+            }
+        else:
+            base_params = {
+                "temperature": 0.7,
+                "max_tokens": 200,
+                "top_p": 0.95
+            }
+        
+        # Ajustar baseado na complexidade
+        if complexity > 0.7:
+            base_params["temperature"] = max(0.2, base_params.get("temperature", 0.7) * 0.8)
+            if "max_tokens" in base_params:
+                base_params["max_tokens"] = int(base_params["max_tokens"] * 1.2)
+        
+        return base_params
+    
+    def _determine_strategy(self, task_type: str, complexity: float, text_length: int) -> str:
+        """
+        Determina estratégia de execução baseado nas características da tarefa
+        """
+        strategies = []
+        
+        # Estratégias baseadas no tipo de tarefa
+        if task_type == "text_completion":
+            strategies.append("default")
+            if complexity > 0.6:
+                strategies.append("chain_of_thought")
+            if text_length > 1000:
+                strategies.append("chunked_processing")
+                
+        elif task_type == "text_classification":
+            if complexity > 0.5:
+                strategies.append("few_shot")
+            else:
+                strategies.append("zero_shot")
+            strategies.append("confidence_threshold")
+            
+        elif task_type == "code_generation":
+            strategies.append("syntax_aware")
+            strategies.append("test_driven")
+            
+        elif task_type in ["translation", "summarization"]:
+            strategies.append("preserve_context")
+            if text_length > 500:
+                strategies.append("hierarchical")
+                
+        else:
+            strategies.append("default")
+        
+        # Adicionar estratégias baseadas em complexidade
+        if complexity > 0.8:
+            strategies.append("verification_step")
+        if text_length > 2000:
+            strategies.append("streaming_output")
+        
+        # Retornar estratégia primária + secundárias
+        primary = strategies[0] if strategies else "default"
+        secondary = strategies[1:] if len(strategies) > 1 else []
+        
+        if secondary:
+            return f"{primary}+{'+'.join(secondary[:2])}"
+        return primary
+    
+    def _estimate_cost(self, provider: str, text_length: int, profile: Dict[str, Any]) -> float:
+        """
+        Estima custo da execução em USD (simulado)
+        """
+        tokens_estimated = text_length * 1.3  # Fator de conversão texto→token
+        cost_per_token = profile.get("cost_per_token", 0.00002)
+        
+        # Custo base
+        base_cost = tokens_estimated * cost_per_token
+        
+        # Adicionar custo fixo por requisição (simulado)
+        fixed_cost = 0.0001 if provider != "local" else 0.0
+        
+        return round(base_cost + fixed_cost, 6)
+    
+    def record_task_result(self, task_data: Dict[str, Any], result: Dict[str, Any]):
+        """
+        Registra resultado de uma tarefa para aprendizado do sistema biomimético.
+        
+        Args:
+            task_data: Dados da tarefa original (mesmos passados para recommend_provider)
+            result: Resultado da execução incluindo métricas
+                - provider: provedor utilizado
+                - quality_score: qualidade da execução (0-1)
+                - latency_ms: latência em milissegundos
+                - success: bool indicando sucesso
+        """
+        # Por enquanto, apenas armazenar para análise futura
+        # Futuramente, usar para meta-learning e evolução
+        
+        if not hasattr(self, 'task_history'):
+            self.task_history = []
+        
+        self.task_history.append({
+            "timestamp": datetime.now().isoformat(),
+            "task_data": task_data,
+            "result": result
+        })
+        
+        # Limitar histórico para evitar crescimento infinito
+        if len(self.task_history) > 1000:
+            self.task_history = self.task_history[-500:]
+        
+        logger.info(f"Resultado de tarefa registrado. Histórico: {len(self.task_history)} entradas")
+    
     def auto_evolve(self, performance_metric: float, task_data: Dict[str, Any]):
         """
         Trigger auto-evolution based on performance
