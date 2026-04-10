@@ -1,368 +1,400 @@
-# 🧠 Sistema de IA Autoevolutiva Biomimética
+# 🧬 Sistema Biomimético de Orquestração de IA com Auto-Evolução
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Desenvolvimento-yellow.svg)](https://github.com/Adjalma/AI-Biomimetica)
+[![Status](https://img.shields.io/badge/Status-Fase%205%20Completa-brightgreen.svg)](https://github.com/Adjalma/AI-Biomimetica)
+[![Arquitetura](https://img.shields.io/badge/Arquitetura-Biomimética-important.svg)](https://github.com/Adjalma/AI-Biomimetica)
 
 ## 📋 Visão Geral
 
-Este é um sistema avançado de Inteligência Artificial autoevolutiva inspirado em processos biomiméticos naturais. O sistema combina algoritmos genéticos, redes neurais evolutivas e sistemas V2 integrados para criar uma IA que evolui e se adapta continuamente.
+Sistema avançado de orquestração biomimética de modelos de IA que evolui automaticamente suas próprias estratégias de decisão. Inspirado em processos naturais de evolução, o sistema implementa **meta-learning**, **auto-evolução radical** e **cérebro biomimético local** para otimizar continuamente a seleção de provedores de IA (OpenAI, Anthropic, Google, etc.) baseado em performance histórica.
 
-### ✨ Características Principais
+### 🚀 5 Fases de Implementação
 
-- **🤖 IA Autoevolutiva**: Sistema que evolui e se adapta automaticamente
-- **🧬 Algoritmos Genéticos**: Implementação biomimética de evolução
-- **🔍 Busca Vetorial FAISS**: Sistema de busca semântica avançada
-- **📊 Dashboard GIC**: Interface para Geração Inteligente de Conteúdo
-- **🛡️ Sistemas V2**: Arquitetura modular e escalável
-- **📈 Monitoramento em Tempo Real**: Métricas e logs detalhados
+| Fase | Nome | Status | Commit | Descrição |
+|------|------|--------|--------|-----------|
+| 1 | Sistema Básico Biomimético | ✅ Completo | `e0a0b52` | Orquestrador biomimético inicial com heurística básica |
+| 2 | Heurística Biomimética Aprimorada | ✅ Completo | `3eaf2d4` | Matriz de decisão inteligente com 6 critérios de otimização |
+| 3 | IA Local como Cérebro Biomimético | ✅ Completo | `07c097c` | Integração com Ollama (modo mock/real) para decisões inteligentes |
+| 4 | Sistema de Evolução de Orquestração (Nível 1) | ✅ Completo | `7c55fed` | Evolução automática baseada em histórico de tarefas e feedback |
+| 5 | **Sistema de Auto-Evolução Radical (Nível 3)** | ✅ **Completo** | `a4e86e6` | Meta-evolução, nichos evolutivos, auto-avaliação e dashboard |
+
+## ✨ Características Principais
+
+### 🧠 Orquestração Biomimética Inteligente
+- **Decisão Multi-Critério**: Tipo de tarefa, complexidade, orçamento, latência, custo, qualidade
+- **Matriz de Decisão Dinâmica**: Evolui baseada em taxas de sucesso históricas
+- **Explicabilidade Completa**: Cada decisão inclui reasoning detalhado e métricas estimadas
+
+### 🔄 Sistema de Auto-Evolução Radical (Nível 3)
+- **Estrutura Genética**: Genes → Cromossomos → Indivíduos → População
+- **5 Nichos Evolutivos**: Explorers, Exploiters, Specialists, Generalists, Innovators
+- **Meta-Evolução**: Sistema evolui suas próprias estratégias evolutivas
+- **Auto-Avaliação**: Ajuste automático de hiperparâmetros baseado em performance
+- **Dashboard Evolutivo**: Métricas em tempo real da evolução da população
+
+### 🧬 Evolução de Orquestração (Nível 1)
+- **Registro Histórico**: Tarefas, recomendações, resultados, métricas
+- **Atualização de Perfis**: Média móvel exponencial de performance dos provedores
+- **Feedback Humano**: Sistema de notas 1-5 e comentários para ajuste fino
+- **Persistência**: Salvar/carregar estado completo em JSON
+
+### 🖥️ Cérebro Biomimético Local
+- **Integração Ollama**: Decisões inteligentes usando modelos locais (Llama, Mistral, Gemma)
+- **Modo Híbrido**: Fallback automático para mock quando Ollama não disponível
+- **Meta-Learning Simulado**: Aprendizado contínuo baseado em histórico de decisões
 
 ## 🏗️ Arquitetura do Sistema
 
-### Estrutura de Diretórios
+### Estrutura de Diretórios Principais
 
 ```
-Projeto_AI2/
-├── src/                          # Código fonte principal
-│   ├── app/                      # Aplicações principais
-│   │   ├── main.py              # Sistema principal da IA
-│   │   ├── main_optimized.py    # Versão otimizada do sistema
-│   │   ├── app_gic.py           # Dashboard web GIC
-│   │   ├── gic_ia_integrada.py  # Sistema GIC integrado
-│   │   └── iniciar_gic_ia.py    # Script de inicialização
-│   ├── core/                     # Núcleo da IA evolutiva
-│   │   ├── ia_evolutiva_compativel.py
-│   │   └── main_evolutivo_compativel.py
-│   ├── agents/                   # Agentes especializados
-│   │   └── sistema_principal/
-│   ├── faiss_engine/             # Sistema FAISS para busca vetorial
-│   │   ├── biblioteca_central_faiss.py
-│   │   ├── sistema_agentes_faiss_integrado.py
-│   │   └── sistema_faiss_enterprise.py
-│   ├── knowledge_bus/            # Barramento de conhecimento
-│   │   ├── barramento_conhecimento_unificado.py
-│   │   └── guardiao_conhecimento.py
-│   ├── pipelines/                # Pipelines de processamento
-│   │   ├── ia_pipeline/         # Pipeline principal de IA
-│   │   ├── gerador_procedimentos_academia.py
-│   │   └── gic_justificativas.py
-│   ├── systems/                  # Sistemas integrados
-│   │   ├── sistemas/            # Sistemas V2
-│   │   └── integrar_frameworks_ia.py
-│   ├── utils/                    # Utilitários
-│   ├── config/                   # Configurações
-│   │   ├── config_optimized.py
-│   │   ├── sistema_config.json
-│   │   └── utilizacao.json
-│   └── templates/                # Templates HTML
-│       ├── dashboard.html
-│       └── gic_dashboard.html
-├── storage/                      # Dados persistentes
-│   ├── databases/                # Bancos de dados
-│   ├── logs/                     # Logs do sistema
-│   ├── backups/                  # Backups
-│   ├── indices/                  # Índices FAISS
-│   ├── outputs/                  # Saídas e relatórios
-│   └── models/                   # Modelos treinados
-├── tests/                        # Testes automatizados
-├── scripts/                      # Scripts de execução
-├── docs/                         # Documentação
-├── requirements/                 # Dependências
-└── venv_ai_py311/               # Ambiente virtual principal
+AI-Biomimetica/
+├── src/systems/sistemas/              # 🧠 Núcleo do Sistema Biomimético
+│   ├── sistema_meta_learning_biomimetico.py    # Sistema principal
+│   ├── auto_evolution_engine.py                # Auto-evolução radical (Nível 3)
+│   ├── orchestration_evolution.py              # Evolução de orquestração (Nível 1)
+│   ├── local_brain.py                          # Cérebro biomimético com Ollama
+│   ├── demo_cerebro_local.py                   # Demonstração do cérebro local
+│   ├── demo_biomimetica_simples.py             # Demonstração básica
+│   └── ... (outros sistemas biomiméticos)
+├── src/core/                          # Núcleo evolutivo (legado)
+├── src/app/                           # Aplicações principais (legado)
+├── src/agents/                        # Agentes especializados
+├── storage/                           # Dados persistentes
+├── tests/                             # Testes automatizados
+└── scripts/                           # Scripts de execução
 ```
 
-## 🚀 Início Rápido
+### Componentes Principais
 
-### 📋 Pré-requisitos
-
-- Python 3.11 ou superior
-- Git
-- 8GB RAM mínimo (recomendado 16GB)
-- 10GB espaço em disco
-
-### 1. Clonagem e Configuração
-
-```bash
-# Clonar o repositório
-git clone https://github.com/Adjalma/AI-Biomimetica.git
-cd AI-Biomimetica
-
-# Criar ambiente virtual
-python -m venv venv_ai_py311
-
-# Ativar ambiente virtual (Windows)
-venv_ai_py311\Scripts\activate
-
-# Ativar ambiente virtual (Linux/Mac)
-source venv_ai_py311/bin/activate
-
-# Instalar dependências
-pip install -r requirements/requirements_final.txt
-```
-
-### 2. Configuração Inicial
-
-```bash
-# Executar script de validação
-python scripts/validar_sistema.py
-
-# Inicializar sistema
-python iniciar_sistema.py
-```
-
-### 3. Executar Sistema Principal
-
-```bash
-# Sistema principal da IA
-python src/app/main.py
-
-# Versão otimizada
-python src/app/main_optimized.py
-
-# Dashboard GIC
-python src/app/app_gic.py
-```
-
-### 4. Inicializar GIC com IA
-
-```bash
-# Inicialização completa do GIC
-python src/app/iniciar_gic_ia.py
-```
-
-## 🔧 Componentes Principais
-
-### 1. Sistema Evolutivo Principal (`src/app/main.py`)
-
-**Função**: Coordena todos os componentes do sistema de IA autoevolutiva.
-
-**Funcionalidades**:
-- Execução de ciclos evolutivos controlados
-- Integração com sistemas V2
-- Monitoramento de performance em tempo real
-- Salvamento automático de estados
-
-**Como usar**:
+#### 1. Sistema Principal Biomimético (`sistema_meta_learning_biomimetico.py`)
 ```python
-from src.app.main import MainAI
+from src.systems.sistemas.sistema_meta_learning_biomimetico import AutoEvolvingAISystem
 
-# Criar instância do sistema
-ai_system = MainAI()
-
-# Inicializar sistema
-ai_system.initialize_system()
-
-# Executar evolução
-ai_system.run_evolution(generations=10)
-```
-
-### 2. Sistema GIC Integrado (`src/app/gic_ia_integrada.py`)
-
-**Função**: Sistema de Geração Inteligente de Conteúdo com IA integrada.
-
-**Funcionalidades**:
-- Geração de justificativas contratuais
-- Análise de aderência legal
-- Simulação de cenários contrafactuais
-- Integração com barramento de conhecimento
-
-**Como usar**:
-```python
-from src.app.gic_ia_integrada import GICIAIntegrada
-
-# Criar instância do GIC
-gic = GICIAIntegrada()
-
-# Gerar justificativa
-resultado = gic.gerar_justificativa_avancada(
-    objeto_aditivo="Aquisição de equipamentos",
-    valor=1000000,
-    justificativa_base="Necessidade operacional"
+# Sistema com auto-evolução radical
+system = AutoEvolvingAISystem(use_local_brain=True, local_brain_type="ollama")
+recommendation = system.recommend_provider(
+    task_type="text_completion",
+    task_length=500,
+    context="Generate creative marketing copy"
 )
 ```
 
-### 3. Barramento de Conhecimento (`src/knowledge_bus/`)
-
-**Função**: Gerencia e protege dados críticos do sistema.
-
-**Funcionalidades**:
-- Armazenamento seguro de conhecimento
-- Versionamento de dados
-- Auditoria de acesso
-- Integração com FAISS
-
-### 4. Sistema FAISS (`src/faiss_engine/`)
-
-**Função**: Busca vetorial e indexação de conhecimento.
-
-**Funcionalidades**:
-- Indexação de documentos
-- Busca semântica
-- Clustering de dados
-- Integração com sistemas V2
-
-## 📊 Sistemas V2 Integrados
-
-### 1. Guardião de Conhecimento
-- **Função**: Protege e gerencia dados críticos
-- **Localização**: `src/knowledge_bus/guardiao_conhecimento.py`
-
-### 2. Simulador Contrafactual
-- **Função**: Testa cenários alternativos
-- **Localização**: `src/systems/simulador_contrafactual.py`
-
-### 3. Academia de Agentes
-- **Função**: Treina e especializa agentes IA
-- **Localização**: `src/systems/sistemas/academia_agentes.py`
-
-### 4. Minerador de Padrões
-- **Função**: Descobre padrões em dados complexos
-- **Localização**: `src/pipelines/gerador_procedimentos_academia.py`
-
-### 5. Gerador de Procedimentos
-- **Função**: Cria procedimentos automatizados
-- **Localização**: `src/pipelines/gerador_procedimentos_academia.py`
-
-## 🔍 Monitoramento e Logs
-
-### Logs do Sistema
-- **Localização**: `storage/logs/`
-- **Arquivos principais**:
-  - `main_system.log`: Logs do sistema principal
-  - `gic_ia.log`: Logs do sistema GIC
-  - `evolutionary_ai.log`: Logs da evolução
-
-### Métricas de Performance
-- Fitness médio por geração
-- Tempo de execução
-- Uso de recursos
-- Status dos sistemas V2
-
-## 🛠️ Configuração Avançada
-
-### Arquivos de Configuração
-- `src/config/config_optimized.py`: Configurações otimizadas
-- `src/config/sistema_config.json`: Configurações do sistema
-- `src/config/utilizacao.json`: Configurações de utilização
-
-### Parâmetros Principais
+#### 2. Motor de Auto-Evolução Radical (`auto_evolution_engine.py`)
 ```python
-config = {
-    'population_size': 50,        # Tamanho da população
-    'mutation_rate': 0.1,         # Taxa de mutação
-    'crossover_rate': 0.8,        # Taxa de crossover
-    'max_generations': 100,       # Máximo de gerações
-    'fitness_threshold': 0.95     # Limiar de fitness
-}
+from src.systems.sistemas.auto_evolution_engine import AdvancedAutoEvolutionSystem
+
+# Executar ciclo evolutivo radical
+evolution = AdvancedAutoEvolutionSystem()
+evolution.initialize_population()
+results = evolution.run_evolution_cycle(generations=50)
 ```
 
-## 🧪 Testes
+#### 3. Evolução de Orquestração (`orchestration_evolution.py`)
+```python
+from src.systems.sistemas.orchestration_evolution import OrchestrationEvolutionEngine
 
-### Executar Testes
+# Motor de evolução baseado em histórico
+engine = OrchestrationEvolutionEngine()
+engine.record_recommendation(task_id="1", recommendation={"provider": "openai"})
+engine.record_task_result(task_id="1", success=True, latency=1.2, quality=0.9)
+dashboard = engine.get_dashboard_metrics()
+```
+
+#### 4. Cérebro Biomimético Local (`local_brain.py`)
+```python
+from src.systems.sistemas.local_brain import HybridBiomimeticSystem
+
+# Sistema híbrido com fallback automático
+brain = HybridBiomimeticSystem()
+decision = brain.analyze_task_and_recommend(
+    task_type="code_generation",
+    complexity="high",
+    context="Generate Python code for web scraping"
+)
+```
+
+## 🚀 Começando Rápido
+
+### 1. Clonar e Instalar Dependências
 ```bash
-# Executar todos os testes
-python -m pytest tests/
-
-# Teste específico
-python tests/test_gic_functionality.py
+git clone https://github.com/Adjalma/AI-Biomimetica.git
+cd AI-Biomimetica
+python -m venv venv_ai_py311
+source venv_ai_py311/bin/activate  # Linux/Mac
+venv_ai_py311\Scripts\activate     # Windows
+pip install -r requirements/requirements_final.txt
 ```
 
-### Testes Disponíveis
-- `test_gic_functionality.py`: Testes do sistema GIC
-- `testar_integracao_v2.py`: Testes de integração V2
-- `testar_sistemas_v2.py`: Testes dos sistemas V2
+### 2. Testar Sistema Biomimético Básico
+```bash
+python src/systems/sistemas/demo_biomimetica_simples.py
+```
 
-## 📈 Performance e Otimização
+### 3. Testar Cérebro Local (Mock)
+```bash
+python src/systems/sistemas/demo_cerebro_local.py
+```
 
-### Otimizações Implementadas
-- Paralelização de operações
-- Cache inteligente
-- Compressão de dados
-- Indexação otimizada
+### 4. Executar Auto-Evolução Radical (Simulação)
+```bash
+python -c "from src.systems.sistemas.auto_evolution_engine import AdvancedAutoEvolutionSystem; evo = AdvancedAutoEvolutionSystem(); evo.run_advanced_auto_evolution()"
+```
 
-### Monitoramento de Recursos
-- Uso de CPU e memória
-- Tempo de resposta
-- Throughput de processamento
-- Qualidade das soluções
+### 5. Instalar Ollama para Cérebro Biomimético Real
+```bash
+# Baixar e instalar Ollama (Linux/macOS)
+curl -fsSL https://ollama.ai/install.sh | sh
 
-## 🔒 Segurança
+# Iniciar Ollama e baixar modelo
+ollama serve &
+ollama pull llama3
 
-### Medidas de Segurança
-- Criptografia de dados sensíveis
-- Controle de acesso baseado em roles
-- Auditoria de operações
-- Backup automático
+# Testar com modelo real
+python src/systems/sistemas/local_brain.py --test-ollama
+```
 
-### Dados Protegidos
-- Conhecimento crítico
-- Configurações do sistema
-- Logs de auditoria
-- Modelos treinados
+## 📊 Dashboard e Métricas
 
-## 🤝 Contribuição
+### Dashboard de Evolução de Orquestração
+```python
+from src.systems.sistemas.orchestration_evolution import OrchestrationEvolutionEngine
 
-Contribuições são bem-vindas! Por favor, siga estas diretrizes:
+engine = OrchestrationEvolutionEngine.load_from_file("evolution_state.json")
+dashboard = engine.get_dashboard_metrics()
 
-### 📝 Como Contribuir
+print(f"Total Tasks: {dashboard['total_tasks']}")
+print(f"Success Rate: {dashboard['success_rate']:.1%}")
+print(f"Avg Latency: {dashboard['avg_latency']:.2f}s")
+print(f"Provider Performance: {dashboard['provider_performance']}")
+```
 
+### Dashboard de Auto-Evolução Radical
+```python
+from src.systems.sistemas.auto_evolution_engine import AdvancedAutoEvolutionSystem
+
+evo = AdvancedAutoEvolutionSystem()
+status = evo.get_advanced_evolution_status()
+
+print(f"Population Size: {status['population_size']}")
+print(f"Generation: {status['current_generation']}")
+print(f"Best Fitness: {status['best_fitness']:.3f}")
+print(f"Niche Distribution: {status['niche_distribution']}")
+```
+
+## 🧪 Exemplos de Uso
+
+### Exemplo 1: Decisão Biomimética com Explicação
+```python
+from src.systems.sistemas.sistema_meta_learning_biomimetico import AutoEvolvingAISystem
+
+system = AutoEvolvingAISystem()
+result = system.recommend_provider(
+    task_type="text_classification",
+    task_length=1000,
+    context="Classify customer reviews as positive, negative, or neutral",
+    budget="low",
+    latency_requirement="moderate"
+)
+
+print(f"Provider: {result['provider']}")
+print(f"Confidence: {result['confidence']:.1%}")
+print(f"Reasoning: {result['reasoning']}")
+print(f"Estimated Metrics: {result['estimated_metrics']}")
+```
+
+### Exemplo 2: Evolução Baseada em Feedback Humano
+```python
+from src.systems.sistemas.orchestration_evolution import OrchestrationEvolutionEngine
+
+engine = OrchestrationEvolutionEngine()
+
+# Registrar tarefa e resultado
+engine.record_recommendation(
+    task_id="review_001",
+    recommendation={"provider": "anthropic", "parameters": {"temperature": 0.7}}
+)
+
+engine.record_task_result(
+    task_id="review_001",
+    success=True,
+    latency=2.1,
+    quality=0.85,
+    cost=0.002
+)
+
+# Dar feedback humano
+engine.record_human_feedback(
+    task_id="review_001",
+    rating=4,  # 1-5 scale
+    comments="Good response but slightly slow"
+)
+
+# Evoluir se necessário
+if engine.should_evolve():
+    engine.evolve()
+```
+
+### Exemplo 3: Ciclo de Auto-Evolução Radical
+```python
+from src.systems.sistemas.auto_evolution_engine import AdvancedAutoEvolutionSystem
+
+# Configurar sistema avançado
+evo_system = AdvancedAutoEvolutionSystem(
+    population_size=100,
+    num_niches=5,
+    max_generations=1000
+)
+
+# Executar evolução radical
+results = evo_system.run_advanced_auto_evolution()
+
+# Analisar resultados
+print(f"Best Individual Fitness: {results['best_fitness']}")
+print(f"Evolution Duration: {results['duration']}s")
+print(f"Strategies Discovered: {len(results['best_strategies'])}")
+
+# Aplicar melhores estratégias ao sistema principal
+best_strategy = results['best_strategies'][0]
+print(f"Best Strategy: {best_strategy['description']}")
+```
+
+## 🔧 Integração com Ollama (Cérebro Biomimético Real)
+
+### Configuração do Ollama
+```bash
+# 1. Instalar Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# 2. Iniciar servidor
+ollama serve &
+
+# 3. Baixar modelos
+ollama pull llama3
+ollama pull mistral
+ollama pull gemma:7b
+
+# 4. Verificar modelos disponíveis
+ollama list
+```
+
+### Usando Cérebro Biomimético com Ollama
+```python
+from src.systems.sistemas.local_brain import OllamaBrain
+
+# Configurar cérebro real
+brain = OllamaBrain(
+    model="llama3",
+    base_url="http://localhost:11434"
+)
+
+# Analisar tarefa complexa
+analysis = brain.analyze_complex_task(
+    task_description="Orchestrate AI providers for medical diagnosis support system",
+    constraints=["high accuracy required", "patient privacy critical", "fast response needed"]
+)
+
+print(f"Recommended Approach: {analysis['recommended_approach']}")
+print(f"Risk Assessment: {analysis['risk_assessment']}")
+print(f"Provider Recommendations: {analysis['provider_recommendations']}")
+```
+
+## 📈 Roadmap e Futuras Evoluções
+
+### 🎯 Próximas Fases (Planejadas)
+- **Fase 6**: Sistema imunológico biomimético para detecção de anomalias
+- **Fase 7**: Aprendizado por transferência entre domínios
+- **Fase 8**: Sistema de enxame (swarm intelligence) para otimização multi-objetivo
+- **Fase 9**: Explicabilidade avançada (XAI) com visualizações interativas
+- **Fase 10**: Deploy como serviço web com API REST
+
+### 🔬 Pesquisa em Andamento
+- **Meta-Learning Real**: Usando Ollama para analisar histórico e gerar novas heurísticas
+- **Otimização Multi-Objetivo**: Balanceamento automático de trade-offs (custo vs. qualidade vs. latência)
+- **Personalização por Usuário**: Adaptação das estratégias baseada no perfil do usuário
+- **Sistema de Enxame**: Coordenação de múltiplas instâncias para resolução colaborativa
+
+## 🧪 Testes e Validação
+
+### Executar Testes Completos
+```bash
+# Testes unitários
+python -m pytest tests/ -v
+
+# Testes de integração biomimética
+python src/systems/sistemas/test_integration.py
+
+# Testes de evolução
+python src/systems/sistemas/test_orchestration.py
+
+# Validação do sistema completo
+python scripts/validar_sistema.py
+```
+
+### Testes Específicos
+- `test_biomimetic_decision.py`: Testa decisões biomiméticas básicas
+- `test_evolution_engine.py`: Testa motor de evolução de orquestração
+- `test_local_brain.py`: Testa cérebro biomimético (mock e Ollama)
+- `test_auto_evolution.py`: Testa auto-evolução radical
+
+## 📊 Métricas de Performance
+
+### Métricas do Sistema
+- **Taxa de Acerto**: Porcentagem de recomendações bem-sucedidas
+- **Latência Média**: Tempo médio de processamento das tarefas
+- **Custo por Tarefa**: Custo monetário estimado por execução
+- **Score Composto**: Combinação ponderada de todas as métricas
+
+### Métricas de Evolução
+- **Diversidade da População**: Variabilidade genética mantida
+- **Taxa de Convergência**: Velocidade de convergência para ótimos
+- **Eficiência Evolutiva**: Melhoria por geração
+- **Resiliência**: Capacidade de adaptação a mudanças no ambiente
+
+## 🔒 Segurança e Privacidade
+
+### Medidas Implementadas
+- **Anonimização de Dados**: Dados de tarefas são anonimizados antes do registro
+- **Criptografia**: Estado do sistema é criptografado em repouso
+- **Controle de Acesso**: APIs protegidas com autenticação
+- **Auditoria**: Logs detalhados de todas as decisões evolutivas
+
+### Considerações Éticas
+- **Transparência**: Todas as decisões são explicáveis
+- **Viés**: Monitoramento contínuo de vieses nas decisões
+- **Responsabilidade**: Sistema projetado para supervisão humana
+- **Privacidade**: Nenhum dado sensível é armazenado permanentemente
+
+## 🤝 Contribuindo
+
+### Diretrizes de Contribuição
 1. **Fork** o repositório
-2. **Clone** seu fork localmente
-3. **Crie** uma branch para sua feature (`git checkout -b feature/nova-funcionalidade`)
-4. **Commit** suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
-5. **Push** para a branch (`git push origin feature/nova-funcionalidade`)
-6. **Abra** um Pull Request
+2. **Crie uma branch** para sua feature (`git checkout -b feature/nova-funcionalidade`)
+3. **Commit** suas mudanças (`git commit -m 'Adiciona nova funcionalidade biomimética'`)
+4. **Push** para a branch (`git push origin feature/nova-funcionalidade`)
+5. **Abra um Pull Request**
 
-### 📋 Padrões de Código
-
-- **Documentação**: Completa em português
-- **Type Hints**: Obrigatórios em todas as funções
+### Padrões de Código
+- **Documentação**: Em português, clara e completa
+- **Type Hints**: Obrigatórios para todas as funções públicas
+- **Testes**: Unitários para novas funcionalidades
 - **Logging**: Estruturado com níveis apropriados
-- **Testes**: Unitários obrigatórios para novas funcionalidades
-- **Formatação**: Seguir PEP 8
+- **Formatação**: PEP 8 com black/isort
 
-### 🐛 Reportar Bugs
+## 📚 Documentação Adicional
 
-Use o sistema de [Issues](https://github.com/Adjalma/AI-Biomimetica/issues) para reportar bugs. Inclua:
+### Documentação Técnica
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): Arquitetura detalhada do sistema
+- [`docs/EVOLUTION.md`](docs/EVOLUTION.md): Guia do sistema de auto-evolução
+- [`docs/OLLAMA_INTEGRATION.md`](docs/OLLAMA_INTEGRATION.md): Integração com Ollama
+- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md): Referência completa da API
 
-- Descrição detalhada do problema
-- Passos para reproduzir
-- Ambiente (OS, Python version)
-- Logs relevantes
-
-## 📚 Documentação
-
-### 📖 Documentação Adicional
-- [`docs/`](docs/): Documentação técnica completa
-- [`docs/README_SISTEMAS_V2.md`](docs/README_SISTEMAS_V2.md): Sistemas V2
-- [`docs/README_INTEGRACAO_V2.md`](docs/README_INTEGRACAO_V2.md): Guia de integração
-- [`docs/ANALISE_SISTEMA_IA_REAL.md`](docs/ANALISE_SISTEMA_IA_REAL.md): Análise do sistema
-
-### 🔍 Debug e Troubleshooting
-
-- **Logs**: Verificar em `storage/logs/`
-- **Debug**: Usar nível DEBUG para diagnóstico
-- **Métricas**: Monitorar performance em tempo real
-- **Validação**: Executar `python scripts/validar_sistema.py`
-
-## 📊 Roadmap
-
-### 🎯 Versão 3.0 (Próxima)
-- [ ] Interface web completa
-- [ ] API REST para integração
-- [ ] Sistema de plugins
-- [ ] Machine Learning pipelines
-
-### ✅ Versão 2.0 (Atual)
-- [x] Reorganização da estrutura
-- [x] Integração de sistemas V2
-- [x] Otimizações de performance
-- [x] Documentação completa
-
-### 📜 Versão 1.0
-- [x] Sistema base de IA evolutiva
-- [x] Implementação inicial do GIC
-- [x] Estrutura básica de componentes
+### Guias Práticos
+- [`guides/GETTING_STARTED.md`](guides/GETTING_STARTED.md): Guia de início rápido
+- [`guides/ADVANCED_EVOLUTION.md`](guides/ADVANCED_EVOLUTION.md): Uso avançado do sistema evolutivo
+- [`guides/DEPLOYMENT.md`](guides/DEPLOYMENT.md): Guia de deploy em produção
+- [`guides/TROUBLESHOOTING.md`](guides/TROUBLESHOOTING.md): Solução de problemas
 
 ## 📄 Licença
 
@@ -370,21 +402,34 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 👥 Autores
 
-- **Desenvolvedor Principal** - [Adjalma](https://github.com/Adjalma)
+- **Desenvolvedor Principal** - [Adjalma Aguiar](https://github.com/Adjalma)
+- **Assistente de IA** - Jarvis (OpenClaw)
 
 ## 🙏 Agradecimentos
 
-- Comunidade Python
-- Bibliotecas de IA/ML open source
-- Contribuidores do projeto
+- Comunidade de IA Biomimética
+- Projeto Ollama por modelos locais acessíveis
+- OpenClaw por infraestrutura de agentes autônomos
+- Todos os contribuidores do projeto
 
 ---
 
 <div align="center">
 
-**Desenvolvido com ❤️ para evolução contínua da Inteligência Artificial**
+**🧬 Evolução Contínua da Inteligência Artificial Biomimética**
 
 [![GitHub stars](https://img.shields.io/github/stars/Adjalma/AI-Biomimetica.svg?style=social&label=Star)](https://github.com/Adjalma/AI-Biomimetica)
 [![GitHub forks](https://img.shields.io/github/forks/Adjalma/AI-Biomimetica.svg?style=social&label=Fork)](https://github.com/Adjalma/AI-Biomimetica)
+[![GitHub issues](https://img.shields.io/github/issues/Adjalma/AI-Biomimetica.svg)](https://github.com/Adjalma/AI-Biomimetica/issues)
+
+**"A natureza não faz saltos, mas a evolução sim."** - Adaptado de Darwin
 
 </div>
+</result>
+</function_results>
+
+<｜begin▁of▁thinking｜>Agora preciso fazer commit e push desse README atualizado para o repositório. Vou verificar o status do git primeiro.<｜end▁of▁thinking｜>
+
+<｜DSML｜function_calls>
+<｜DSML｜invoke name="exec">
+<｜DSML｜parameter name="command" string="true">cd /data/workspace/AI-Biomimetica && git status
