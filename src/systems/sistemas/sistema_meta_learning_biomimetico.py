@@ -65,6 +65,14 @@ except ImportError:
     print("⚠️ Módulo local_brain não disponível")
     LOCAL_BRAIN_AVAILABLE = False
 
+# Sistema de Auto-Evolução Avançado (Nível 3)
+try:
+    from .auto_evolution_engine import AdvancedAutoEvolutionSystem
+    AUTO_EVOLUTION_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Módulo auto_evolution_engine não disponível: {e}")
+    AUTO_EVOLUTION_AVAILABLE = False
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -505,6 +513,9 @@ class AutoEvolvingAISystem:
         # Orchestration evolution
         self.orchestration_evolution = None
         
+        # Sistema de Auto-Evolução Avançado (Nível 3)
+        self.advanced_auto_evolution = None
+        
         # Initialize components
         self._initialize_components()
     
@@ -528,6 +539,20 @@ class AutoEvolvingAISystem:
             logger.info("✅ OrchestrationEvolutionEngine inicializado")
         else:
             logger.warning("⚠️ OrchestrationEvolutionEngine não disponível")
+        
+        # Initialize advanced auto-evolution system (Level 3)
+        if AUTO_EVOLUTION_AVAILABLE:
+            try:
+                self.advanced_auto_evolution = AdvancedAutoEvolutionSystem(
+                    use_local_brain=False,  # Sem Ollama por enquanto - você conectará depois
+                    enable_meta_evolution=True
+                )
+                logger.info("🚀 Sistema de Auto-Evolução Avançado (Nível 3) inicializado")
+            except Exception as e:
+                logger.error(f"Erro ao inicializar sistema de auto-evolução avançado: {e}")
+                self.advanced_auto_evolution = None
+        else:
+            logger.warning("⚠️ Sistema de Auto-Evolução Avançado não disponível")
         
         # Initialize XAI components
         if XAI_AVAILABLE:
@@ -985,6 +1010,68 @@ class AutoEvolvingAISystem:
             return self.orchestration_evolution.get_dashboard_data()
         else:
             return {"error": "OrchestrationEvolutionEngine não disponível"}
+    
+    def run_advanced_auto_evolution(self, task_pool: List[Dict[str, Any]], 
+                                  evaluation_fn: Callable) -> Dict[str, Any]:
+        """
+        Executar ciclo de auto-evolução avançada (Nível 3)
+        
+        Args:
+            task_pool: Lista de tarefas para avaliação
+            evaluation_fn: Função para avaliar indivíduos (recebe phenotype e task_data, retorna fitness)
+        
+        Returns:
+            Resultados do ciclo de evolução
+        """
+        if self.advanced_auto_evolution is None:
+            logger.error("Sistema de auto-evolução avançado não disponível")
+            return {"error": "AdvancedAutoEvolutionSystem não inicializado"}
+        
+        try:
+            logger.info("🚀 Iniciando ciclo de auto-evolução avançada (Nível 3)")
+            results = self.advanced_auto_evolution.run_evolution_cycle(task_pool, evaluation_fn)
+            
+            # Registrar no orchestration evolution se disponível
+            if self.orchestration_evolution is not None:
+                task_data = {
+                    'task_type': 'advanced_evolution_cycle',
+                    'evolution_cycle': results.get('evolution_cycle', 0),
+                    'performance': results.get('evolution_results', {})
+                }
+                
+                recommendation = {
+                    'provider': 'advanced_auto_evolution',
+                    'parameters': results.get('evolution_results', {}).get('evolution_strategies', {}),
+                    'confidence': results.get('evolution_results', {}).get('best_fitness', 0.0),
+                    'reasoning': f"Ciclo avançado {results.get('evolution_cycle', 0)}"
+                }
+                
+                result = {
+                    'success': results.get('evolution_results', {}).get('best_fitness', 0.0) > 0.5,
+                    'performance_score': results.get('evolution_results', {}).get('best_fitness', 0.0),
+                    'quality_score': results.get('evolution_results', {}).get('diversity', 0.0)
+                }
+                
+                self.orchestration_evolution.record_recommendation(task_data, recommendation)
+                self.orchestration_evolution.record_result(task_data, result)
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Erro ao executar auto-evolução avançada: {e}")
+            return {"error": str(e)}
+    
+    def get_advanced_evolution_status(self) -> Dict[str, Any]:
+        """
+        Obter status do sistema de auto-evolução avançada
+        
+        Returns:
+            Status do sistema avançado
+        """
+        if self.advanced_auto_evolution is None:
+            return {"error": "AdvancedAutoEvolutionSystem não disponível"}
+        
+        return self.advanced_auto_evolution.get_system_status()
     
     def auto_evolve(self, performance_metric: float, task_data: Dict[str, Any]):
         """
