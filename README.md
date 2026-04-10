@@ -403,7 +403,8 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 ## Bio Console API (CHOKMAH) e integrações
 
 - **API FastAPI:** `src/app/bio_console_api.py`, arranque: `python scripts/run_bio_console_api.py`.
-- **Documentação de integração:** pasta [`docs/bio-console/`](docs/bio-console/) (contrato REST, Z-API WhatsApp, ElevenLabs, Google Meet).
+- **Segredos e integrações (ElevenLabs, Z-API, Obsidian, Ollama):** ficheiro **`.env`** na raiz deste repositório (`AI-Biomimetica/`), copiado de [`.env.example`](.env.example). Não coloques API keys no frontend nem no Git.
+- **Documentação de integração:** pasta [`docs/bio-console/`](docs/bio-console/) (contrato REST, Z-API WhatsApp, ElevenLabs, Google Meet, [Obsidian](docs/bio-console/obsidian-chokmah.md)).
 - **CI:** `.github/workflows/ci.yml` — `compileall` + testes de contrato `tests/test_bio_console_api_contract.py`.
 - **Frontend** (repositório separado [your-app-creator](https://github.com/Adjalma/your-app-creator)): consola Vite que consome `/api/v1`.
 

@@ -146,3 +146,79 @@ def test_whatsapp_zapi_webhook_ack(client: TestClient):
     )
     assert r.status_code == 200
     assert r.json().get("received") is True
+
+
+def test_obsidian_status(monkeypatch, client: TestClient):
+    monkeypatch.delenv("OBSIDIAN_VAULT_ROOT", raising=False)
+    r = client.get("/api/v1/obsidian/status")
+    assert r.status_code == 200
+    data = r.json()
+    assert data.get("vault_configured") is False
+    assert "chokmah_folder" in data
+
+
+def test_health_includes_obsidian(monkeypatch, client: TestClient):
+    monkeypatch.delenv("OBSIDIAN_VAULT_ROOT", raising=False)
+    r = client.get("/api/v1/health")
+    assert r.status_code == 200
+    obs = (r.json().get("obsidian") or {})
+    assert "vault_configured" in obs
+    assert "chokmah_folder" in obs
+
+
+def test_obsidian_note_requires_vault(monkeypatch, engine_mock: MagicMock):
+    monkeypatch.delenv("OBSIDIAN_VAULT_ROOT", raising=False)
+    monkeypatch.setattr(bc, "get_engine", lambda: engine_mock)
+    c = TestClient(bc.app)
+    r = c.post(
+        "/api/v1/obsidian/note",
+        json={
+            "relative_path": "x.md",
+            "body": "conteúdo",
+        },
+    )
+    assert r.status_code == 503
+
+
+def test_obsidian_note_writes_file(tmp_path, monkeypatch, engine_mock: MagicMock):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setenv("OBSIDIAN_VAULT_ROOT", str(vault))
+    monkeypatch.setenv("OBSIDIAN_CHOKMAH_RELATIVE", "CHOKMAH")
+    monkeypatch.delenv("OBSIDIAN_WRITE_TOKEN", raising=False)
+    monkeypatch.setattr(bc, "get_engine", lambda: engine_mock)
+
+    c = TestClient(bc.app)
+    r = c.post(
+        "/api/v1/obsidian/note",
+        json={
+            "relative_path": "notas/teste.md",
+            "title": "Título",
+            "body": "Corpo **markdown**.",
+            "tags": ["chokmah"],
+        },
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data.get("ok") is True
+    assert data.get("mode") == "create"
+    out = vault / "CHOKMAH" / "notas" / "teste.md"
+    assert out.is_file()
+    text = out.read_text(encoding="utf-8")
+    assert "Título" in text
+    assert "Corpo **markdown**." in text
+    assert "chokmah" in text
+
+
+def test_obsidian_note_rejects_traversal(tmp_path, monkeypatch, engine_mock: MagicMock):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setenv("OBSIDIAN_VAULT_ROOT", str(vault))
+    monkeypatch.delenv("OBSIDIAN_WRITE_TOKEN", raising=False)
+    monkeypatch.setattr(bc, "get_engine", lambda: engine_mock)
+    c = TestClient(bc.app)
+    r = c.post(
+        "/api/v1/obsidian/note",
+        json={"relative_path": "../escape.md", "body": "x"},
+    )
+    assert r.status_code == 400

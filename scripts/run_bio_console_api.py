@@ -10,6 +10,12 @@ Variáveis opcionais:
   USE_LOCAL_BRAIN=true|false   (default: true)
   LOCAL_BRAIN_TYPE=ollama|mock
   OLLAMA_MODEL, OLLAMA_BASE_URL
+  OBSIDIAN_VAULT_ROOT          (caminho absoluto do cofre; ver docs/bio-console/obsidian-chokmah.md)
+  OBSIDIAN_CHOKMAH_RELATIVE    (default: CHOKMAH)
+  OBSIDIAN_WRITE_TOKEN         (opcional; exige header X-Obsidian-Write-Token nas gravações)
+
+  Ou crie ficheiro .env na pasta AI-Biomimetica (ver .env.example) — resolve o reload do Uvicorn
+  no Windows, que por vezes não herda $env: do PowerShell no processo que atende o HTTP.
 """
 
 from __future__ import annotations
@@ -23,6 +29,14 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 if __name__ == "__main__":
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv(ROOT / ".env", override=True)
+        load_dotenv(ROOT / "bio_console.env", override=True)
+    except ImportError:
+        pass
+
     import uvicorn
 
     host = os.environ.get("BIO_CONSOLE_HOST", "0.0.0.0")

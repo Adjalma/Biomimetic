@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Query
+from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -26,10 +26,27 @@ from pathlib import Path
 
 _APP_DIR = Path(__file__).resolve().parent
 _SRC = _APP_DIR.parent
+_REPO_ROOT = _APP_DIR.parent.parent
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+# Cofre Obsidian e outras variáveis: também lidas pelo worker do Uvicorn (--reload no Windows).
+try:
+    from dotenv import load_dotenv
+
+    # override=True: variáveis vazias no ambiente do Windows não bloqueiam valores do .env
+    load_dotenv(_REPO_ROOT / ".env", override=True)
+    load_dotenv(_REPO_ROOT / "bio_console.env", override=True)
+except ImportError:
+    pass
+
 from systems.sistemas.sistema_meta_learning_biomimetico import AutoEvolvingAISystem  # noqa: E402
+
+from app.obsidian_vault import (  # noqa: E402
+    chokmah_subdir,
+    vault_root_from_env,
+    write_note as obsidian_write_note,
+)
 
 try:
     import requests
@@ -42,7 +59,7 @@ except ImportError:
 
 
 API_PREFIX = "/api/v1"
-VERSION = "0.2.3-bio-console"
+VERSION = "0.2.4-bio-console"
 
 _ELEVENLABS_TTS_MAX_CHARS = 8000
 
@@ -106,6 +123,32 @@ class ElevenLabsTTSRequestModel(BaseModel):
     voice_id: Optional[str] = Field(
         default=None,
         description="Opcional; senão usa ELEVENLABS_VOICE_ID no servidor",
+    )
+
+
+_OBSIDIAN_BODY_MAX = 500_000
+
+
+class ObsidianNoteWriteModel(BaseModel):
+    """
+    Grava Markdown sob `<cofre>/<OBSIDIAN_CHOKMAH_RELATIVE>/`.
+    Caminho só com .md, sem .. (validação no servidor).
+    """
+
+    relative_path: str = Field(
+        ...,
+        description="Ex.: episodios/2026-04-10.md (relativo à pasta CHOKMAH)",
+    )
+    body: str = Field(..., min_length=1, max_length=_OBSIDIAN_BODY_MAX)
+    title: Optional[str] = Field(default=None, max_length=500)
+    tags: List[str] = Field(default_factory=list)
+    append: bool = Field(
+        default=False,
+        description="Se true e o ficheiro existir, acrescenta secção com data UTC",
+    )
+    frontmatter_extra: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Campos YAML simples (str, int, float, bool)",
     )
 
 
@@ -503,6 +546,7 @@ def create_app() -> FastAPI:
     def health() -> Dict[str, Any]:
         b = _get_brain()
         ollama_ok = _ollama_tags_reachable(b.ollama_base_url)
+        vault = vault_root_from_env()
         return {
             "api": "ok",
             "ollama": {
@@ -510,6 +554,11 @@ def create_app() -> FastAPI:
                 "base_url": b.ollama_base_url,
                 "model": b.ollama_model,
                 "last_check_utc": _utc_now(),
+            },
+            "obsidian": {
+                "vault_configured": vault is not None,
+                "vault_ready": bool(vault and vault.is_dir()),
+                "chokmah_folder": chokmah_subdir(),
             },
             "version": VERSION,
         }
@@ -621,6 +670,56 @@ def create_app() -> FastAPI:
             "api_key_set": bool(key),
             "default_voice_set": bool(vid),
         }
+
+    @app.get(f"{API_PREFIX}/obsidian/status")
+    def obsidian_status() -> Dict[str, Any]:
+        """Cofre Obsidian (ficheiros locais). Sem OBSIDIAN_VAULT_ROOT as gravações ficam desativadas."""
+        root = vault_root_from_env()
+        return {
+            "vault_configured": root is not None,
+            "vault_ready": bool(root and root.is_dir()),
+            "chokmah_folder": chokmah_subdir(),
+            "write_token_required": bool(os.environ.get("OBSIDIAN_WRITE_TOKEN", "").strip()),
+        }
+
+    @app.post(f"{API_PREFIX}/obsidian/note")
+    def obsidian_note(request: Request, note: ObsidianNoteWriteModel) -> Dict[str, Any]:
+        expected = os.environ.get("OBSIDIAN_WRITE_TOKEN", "").strip()
+        if expected:
+            got = (request.headers.get("x-obsidian-write-token") or "").strip()
+            if got != expected:
+                raise HTTPException(status_code=401, detail="token de escrita Obsidian inválido")
+
+        root = vault_root_from_env()
+        if not root or not root.is_dir():
+            raise HTTPException(
+                status_code=503,
+                detail="Defina OBSIDIAN_VAULT_ROOT com caminho absoluto da pasta do cofre Obsidian",
+            )
+        extra = note.frontmatter_extra or {}
+        for _k, v in extra.items():
+            if not isinstance(v, (str, int, float, bool)):
+                raise HTTPException(
+                    status_code=400,
+                    detail="frontmatter_extra: use apenas string, número ou booleano",
+                )
+        try:
+            result = obsidian_write_note(
+                vault=root,
+                relative_md=note.relative_path,
+                title=note.title,
+                body=note.body,
+                tags=list(note.tags or []),
+                append=bool(note.append),
+                frontmatter_extra=extra or None,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except OSError as e:
+            logger.warning("Obsidian write: %s", e)
+            raise HTTPException(status_code=500, detail=f"erro ao gravar: {e}") from e
+
+        return {"ok": True, **result}
 
     @app.post(f"{API_PREFIX}/tts/elevenlabs")
     def tts_elevenlabs(body: ElevenLabsTTSRequestModel) -> Response:
