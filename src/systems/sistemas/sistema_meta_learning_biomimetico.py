@@ -49,6 +49,14 @@ try:
 except ImportError:
     print("⚠️ XAI frameworks não disponíveis")
 
+# IA Local como Cérebro Biomimético
+try:
+    from .local_brain import HybridBiomimeticSystem
+    LOCAL_BRAIN_AVAILABLE = True
+except ImportError:
+    print("⚠️ Módulo local_brain não disponível")
+    LOCAL_BRAIN_AVAILABLE = False
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -466,7 +474,7 @@ class AutoEvolvingAISystem:
     Sistema de IA Autoevolutiva com Meta-Learning Biomimético
     """
     
-    def __init__(self):
+    def __init__(self, use_local_brain: bool = False, local_brain_type: str = "mock"):
         self.meta_learner = None
         self.evolutionary_engine = None
         self.current_model = None
@@ -480,6 +488,11 @@ class AutoEvolvingAISystem:
         # XAI components
         self.explanation_engine = None
         self.confidence_estimator = None
+        
+        # IA Local como Cérebro Biomimético
+        self.use_local_brain = use_local_brain and LOCAL_BRAIN_AVAILABLE
+        self.local_brain = None
+        self.local_brain_type = local_brain_type
         
         # Initialize components
         self._initialize_components()
@@ -502,6 +515,15 @@ class AutoEvolvingAISystem:
         if XAI_AVAILABLE:
             self.explanation_engine = ExplanationEngine(self.current_model)
             self.confidence_estimator = ConfidenceEstimator(self.current_model)
+        
+        # Initialize local brain if enabled
+        if self.use_local_brain:
+            try:
+                self.local_brain = HybridBiomimeticSystem(brain_type=self.local_brain_type)
+                logger.info(f"🧠 Cérebro local inicializado (tipo: {self.local_brain_type})")
+            except Exception as e:
+                logger.error(f"Erro ao inicializar cérebro local: {e}")
+                self.use_local_brain = False
         
         logger.info("✅ Sistema autoevolutivo inicializado")
     
