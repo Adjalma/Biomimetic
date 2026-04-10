@@ -19,6 +19,14 @@ import copy
 from collections import deque
 import pickle
 
+# Orchestration evolution imports
+try:
+    from .orchestration_evolution import OrchestrationEvolutionEngine
+    ORCHESTRATION_EVOLUTION_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ OrchestrationEvolutionEngine não disponível: {e}")
+    ORCHESTRATION_EVOLUTION_AVAILABLE = False
+
 # Meta-learning imports
 META_LEARNING_AVAILABLE = False
 try:
@@ -494,6 +502,9 @@ class AutoEvolvingAISystem:
         self.local_brain = None
         self.local_brain_type = local_brain_type
         
+        # Orchestration evolution
+        self.orchestration_evolution = None
+        
         # Initialize components
         self._initialize_components()
     
@@ -510,6 +521,13 @@ class AutoEvolvingAISystem:
         # Initialize evolutionary engine
         self.evolutionary_engine = BiomimeticEvolutionaryEngine()
         self.evolutionary_engine.initialize_neat_population()
+        
+        # Initialize orchestration evolution engine
+        if ORCHESTRATION_EVOLUTION_AVAILABLE:
+            self.orchestration_evolution = OrchestrationEvolutionEngine()
+            logger.info("✅ OrchestrationEvolutionEngine inicializado")
+        else:
+            logger.warning("⚠️ OrchestrationEvolutionEngine não disponível")
         
         # Initialize XAI components
         if XAI_AVAILABLE:
@@ -750,6 +768,24 @@ class AutoEvolvingAISystem:
             f"Estratégia: {strategy}."
         )
         
+        # Registrar recomendação para evolução de orquestração
+        if self.orchestration_evolution is not None:
+            recommendation = {
+                "provider": provider,
+                "parameters": parameters,
+                "strategy": strategy,
+                "confidence": float(confidence),
+                "reasoning": reasoning,
+                "metadata": {
+                    "primary_criterion": primary_criterion,
+                    "complexity_score": complexity,
+                    "estimated_cost": self._estimate_cost(provider, text_length, profile),
+                    "estimated_latency_ms": profile["avg_latency_ms"]
+                }
+            }
+            self.orchestration_evolution.record_recommendation(task_data, recommendation)
+            logger.debug(f"Recomendação registrada para evolução de orquestração")
+        
         logger.info(f"Recomendação biomimética: {reasoning}")
         
         return {
@@ -931,7 +967,24 @@ class AutoEvolvingAISystem:
         if len(self.task_history) > 1000:
             self.task_history = self.task_history[-500:]
         
+        # Registrar resultado para evolução de orquestração
+        if self.orchestration_evolution is not None:
+            self.orchestration_evolution.record_result(task_data, result)
+            logger.debug(f"Resultado registrado para evolução de orquestração")
+        
         logger.info(f"Resultado de tarefa registrado. Histórico: {len(self.task_history)} entradas")
+    
+    def get_orchestration_dashboard(self) -> Dict[str, Any]:
+        """
+        Obter dados do dashboard de evolução de orquestração.
+        
+        Returns:
+            Dicionário com métricas, histórico e sugestões de melhoria
+        """
+        if self.orchestration_evolution is not None:
+            return self.orchestration_evolution.get_dashboard_data()
+        else:
+            return {"error": "OrchestrationEvolutionEngine não disponível"}
     
     def auto_evolve(self, performance_metric: float, task_data: Dict[str, Any]):
         """
