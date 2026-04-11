@@ -169,6 +169,9 @@ tmp/
 *.env
 config_local.json
 secrets.json
+credentials.json
+token.pickle
+storage/token.pickle
 
 # Large model files
 *.bin
