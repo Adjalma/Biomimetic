@@ -10,7 +10,7 @@ import logging
 import os
 import uuid
 from collections import deque
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -30,15 +30,31 @@ _REPO_ROOT = _APP_DIR.parent.parent
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-# Cofre Obsidian e outras variáveis: também lidas pelo worker do Uvicorn (--reload no Windows).
-try:
-    from dotenv import load_dotenv
+def refresh_bio_console_dotenv_from_files() -> None:
+    """
+    Re-lê AI-Biomimetica/.env e depois bio_console.env (se existir — este último sobrescreve o primeiro).
 
-    # override=True: variáveis vazias no ambiente do Windows não bloqueiam valores do .env
+    Chamado no arranque e antes de cada TTS/status para que alterações à voz entrem em efeito
+    sem obrigar a reiniciar o Uvicorn (útil no Windows com --reload).
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    # override=True: valores do ficheiro prevalecem sobre variáveis de ambiente vazias/erradas no SO
     load_dotenv(_REPO_ROOT / ".env", override=True)
     load_dotenv(_REPO_ROOT / "bio_console.env", override=True)
-except ImportError:
-    pass
+
+
+# Cofre Obsidian e outras variáveis: também lidas pelo worker do Uvicorn (--reload no Windows).
+refresh_bio_console_dotenv_from_files()
+
+
+def _elevenlabs_voice_id_tail(voice_id: str) -> Optional[str]:
+    v = (voice_id or "").strip()
+    if not v:
+        return None
+    return v[-6:] if len(v) > 6 else v
 
 from systems.sistemas.sistema_meta_learning_biomimetico import AutoEvolvingAISystem  # noqa: E402
 
@@ -59,9 +75,96 @@ except ImportError:
 
 
 API_PREFIX = "/api/v1"
-VERSION = "0.2.4-bio-console"
+VERSION = "0.2.14-bio-console"
 
 _ELEVENLABS_TTS_MAX_CHARS = 8000
+
+_elevenlabs_verify_warned: List[bool] = [False]
+
+
+def _elevenlabs_requests_verify():
+    """
+    Redes com inspeção SSL (proxy corporativo) falham com CERTIFICATE_VERIFY_FAILED.
+    Opções: ELEVENLABS_CA_BUNDLE=caminho.pem (recomendado) ou ELEVENLABS_SSL_VERIFY=false (só rede confiável).
+    """
+    flag = os.environ.get("ELEVENLABS_SSL_VERIFY", "").strip().lower()
+    if flag in ("0", "false", "no", "off"):
+        if not _elevenlabs_verify_warned[0]:
+            logger.warning(
+                "ElevenLabs: ELEVENLABS_SSL_VERIFY desactivado — inseguro fora de rede controlada; "
+                "prefira ELEVENLABS_CA_BUNDLE com o PEM da CA interna."
+            )
+            _elevenlabs_verify_warned[0] = True
+        return False
+    bundle = os.environ.get("ELEVENLABS_CA_BUNDLE", "").strip()
+    if bundle:
+        p = Path(bundle).expanduser()
+        if p.is_file():
+            return str(p.resolve())
+    return True
+
+
+def _elevenlabs_voice_settings() -> Dict[str, Any]:
+    """Prosódia ElevenLabs — menos monótona (stability mais baixo = mais variação emocional)."""
+
+    def _f01(env_key: str, default: float) -> float:
+        raw = os.environ.get(env_key, "").strip()
+        if not raw:
+            return default
+        try:
+            return max(0.0, min(1.0, float(raw)))
+        except ValueError:
+            return default
+
+    def _speed() -> float:
+        raw = os.environ.get("ELEVENLABS_SPEED", "").strip()
+        default = 0.97
+        if not raw:
+            return default
+        try:
+            return max(0.5, min(1.35, float(raw)))
+        except ValueError:
+            return default
+
+    return {
+        # Defaults calibrados para soar menos "robô"; afinar via .env ou trocar ELEVENLABS_VOICE_ID.
+        "stability": _f01("ELEVENLABS_STABILITY", 0.36),
+        "similarity_boost": _f01("ELEVENLABS_SIMILARITY_BOOST", 0.78),
+        "style": _f01("ELEVENLABS_STYLE", 0.32),
+        "use_speaker_boost": os.environ.get("ELEVENLABS_USE_SPEAKER_BOOST", "true").strip().lower()
+        not in ("0", "false", "no", "off"),
+        "speed": _speed(),
+    }
+
+
+def _elevenlabs_tts_json_body(text: str) -> Dict[str, Any]:
+    """Corpo JSON do POST ElevenLabs (model_id, voice_settings, language opcional)."""
+    model_id = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2").strip()
+    body: Dict[str, Any] = {
+        "text": text.strip()[:_ELEVENLABS_TTS_MAX_CHARS],
+        "model_id": model_id or "eleven_multilingual_v2",
+        "voice_settings": _elevenlabs_voice_settings(),
+    }
+    lang = os.environ.get("ELEVENLABS_LANGUAGE_CODE", "").strip()
+    if lang:
+        body["language_code"] = lang[:16]
+    return body
+
+
+def _elevenlabs_tts_query_params() -> Dict[str, Any]:
+    """Query string: qualidade de áudio e latência vs qualidade."""
+    params: Dict[str, Any] = {}
+    fmt = os.environ.get("ELEVENLABS_OUTPUT_FORMAT", "").strip()
+    if fmt:
+        params["output_format"] = fmt
+    raw_lat = os.environ.get("ELEVENLABS_OPTIMIZE_STREAMING_LATENCY", "").strip()
+    if raw_lat != "":
+        try:
+            params["optimize_streaming_latency"] = max(0, min(4, int(raw_lat)))
+        except ValueError:
+            params["optimize_streaming_latency"] = 0
+    return params
+
 
 # CORS: Vite com host "::" expõe o UI também pelo IP LAN (ex. http://192.168.1.3:8080).
 _CORS_LAN_REGEX = (
@@ -78,6 +181,8 @@ def _cors_allow_origins() -> List[str]:
     origins = [
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "https://localhost:8080",
+        "https://127.0.0.1:8080",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
@@ -175,6 +280,22 @@ def _load_evolving_agent_system_prompt() -> str:
     )
 
 
+def _load_chat_conversation_system_prompt() -> str:
+    path = _APP_DIR / "prompts" / "chat_conversation_system.txt"
+    if path.is_file():
+        return path.read_text(encoding="utf-8").strip()
+    return (
+        "Conversas em português com memória do histórico. Tom natural, adequado para voz. "
+        "Responde só com a tua mensagem."
+    )
+
+
+def _trim_chat_messages(messages: List[Dict[str, str]], max_messages: int) -> List[Dict[str, str]]:
+    if max_messages <= 0 or len(messages) <= max_messages:
+        return messages
+    return messages[-max_messages:]
+
+
 def _split_agent_output(raw: str) -> tuple[str, str]:
     if "---RACIOCINIO---" in raw and "---RESPOSTA---" in raw:
         try:
@@ -261,6 +382,116 @@ def _log_agent_episode(
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _last_user_text_for_log(body: ChatRequestModel) -> str:
+    u = (body.message or "").strip()
+    if u:
+        return u
+    for m in reversed(body.messages or []):
+        if m.role == "user" and (m.content or "").strip():
+            return m.content.strip()
+    return ""
+
+
+def _maybe_obsidian_log_chat(
+    body: ChatRequestModel,
+    answer: str,
+    reasoning: Optional[str],
+    mode: str,
+) -> None:
+    """
+    Grava troca no cofre Obsidian (append diário em CHOKMAH/dialogos/).
+    Desligar: OBSIDIAN_AUTO_LOG_CHAT=false
+    """
+    flag = os.environ.get("OBSIDIAN_AUTO_LOG_CHAT", "true").strip().lower()
+    if flag in ("0", "false", "no", "off"):
+        return
+    root = vault_root_from_env()
+    if not root or not root.is_dir():
+        return
+    ans = (answer or "").strip()
+    if not ans:
+        return
+    user_txt = _last_user_text_for_log(body)[:5000]
+    ans_clip = ans[:12000]
+    rel = f"dialogos/{date.today().isoformat()}.md"
+    lines = [
+        f"**Modo:** `{mode}`",
+    ]
+    if body.session_id:
+        lines.append(f"**Sessão:** `{body.session_id}`")
+    lines.extend(
+        [
+            "",
+            "### Pergunta",
+            user_txt or "_(sem texto na última mensagem)_",
+            "",
+            "### Resposta",
+            ans_clip,
+        ]
+    )
+    r = (reasoning or "").strip()
+    if r:
+        r = r[:10000]
+        lines.extend(["", "### Raciocínio (agente)", "", "```", r, "```"])
+    md_body = "\n".join(lines)
+    extra: Optional[Dict[str, Any]] = None
+    if body.session_id:
+        extra = {"session_id": str(body.session_id)[:120]}
+    try:
+        obsidian_write_note(
+            vault=root,
+            relative_md=rel,
+            title=None,
+            body=md_body,
+            tags=["chokmah", "dialogo", "bio-console"],
+            append=True,
+            frontmatter_extra=extra,
+        )
+    except Exception as ex:
+        logger.debug("Obsidian auto-log chat: %s", ex)
+
+
+def _default_chokmah_welcome(agent_name: str) -> str:
+    return f"Olá. Sou {agent_name}, o teu agente cognitivo, como posso lhe ajudar?"
+
+
+def _maybe_obsidian_log_agent_event(
+    *,
+    kind: str,
+    detail: str,
+    agent_name: str,
+) -> None:
+    """Eventos do agente (abertura, etc.) em CHOKMAH/agent/eventos-AAAA-MM-DD.md."""
+    flag = os.environ.get("OBSIDIAN_LOG_AGENT_EVENTS", "true").strip().lower()
+    if flag in ("0", "false", "no", "off"):
+        return
+    root = vault_root_from_env()
+    if not root or not root.is_dir():
+        return
+    rel = f"agent/eventos-{date.today().isoformat()}.md"
+    md_body = "\n".join(
+        [
+            f"**Tipo:** `{kind}`",
+            f"**Agente:** {agent_name}",
+            f"**UTC:** {_utc_now()}",
+            "",
+            detail.strip()[:4000],
+        ]
+    )
+    try:
+        obsidian_write_note(
+            vault=root,
+            relative_md=rel,
+            title=None,
+            body=md_body,
+            tags=["chokmah", "agente", "evento"],
+            append=True,
+            frontmatter_extra={"event_kind": kind[:80]},
+        )
+    except Exception as ex:
+        logger.debug("Obsidian agent event: %s", ex)
 
 
 def _get_brain() -> BrainSettingsModel:
@@ -525,6 +756,155 @@ def _zapi_process_webhook_payload(payload: Dict[str, Any]) -> None:
     _zapi_send_text(phone, answer.strip())
 
 
+def _collect_host_metrics() -> Dict[str, Any]:
+    """
+    Métricas reais do hospedeiro onde corre a API (CPU/RAM/swap/discos), via psutil.
+    Útil para HUD tipo «central de comando» no frontend; não substitui monitorização de produção.
+    """
+    try:
+        import platform as plat
+
+        import psutil
+    except ImportError:
+        return {"available": False, "reason": "psutil_unavailable"}
+
+    try:
+        boot = float(psutil.boot_time())
+        now_ts = datetime.now(timezone.utc).timestamp()
+        mem = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        cpu_logical = int(psutil.cpu_count(logical=True) or 1)
+        cpu_physical = psutil.cpu_count(logical=False)
+        # Amostra curta para percentagem útil num único pedido HTTP
+        cpu_pct = float(psutil.cpu_percent(interval=0.08))
+        try:
+            per_core = [float(x) for x in psutil.cpu_percent(interval=0, percpu=True)]
+        except Exception:
+            per_core = None
+
+        disks: List[Dict[str, Any]] = []
+        try:
+            for part in psutil.disk_partitions(all=False):
+                if not part.fstype or part.fstype.lower() == "cdfs":
+                    continue
+                try:
+                    u = psutil.disk_usage(part.mountpoint)
+                    disks.append(
+                        {
+                            "mountpoint": part.mountpoint,
+                            "device": part.device,
+                            "fstype": part.fstype,
+                            "total": int(u.total),
+                            "used": int(u.used),
+                            "free": int(u.free),
+                            "percent": float(u.percent),
+                        }
+                    )
+                except (PermissionError, OSError):
+                    continue
+        except Exception:
+            disks = []
+
+        disks.sort(key=lambda d: d.get("total", 0), reverse=True)
+
+        load_avg: Optional[List[float]] = None
+        if hasattr(os, "getloadavg"):
+            try:
+                load_avg = [float(x) for x in os.getloadavg()]
+            except OSError:
+                load_avg = None
+
+        process_count: Optional[int] = None
+        try:
+            process_count = len(psutil.pids())
+        except Exception:
+            process_count = None
+
+        net_io: Optional[Dict[str, int]] = None
+        try:
+            nio = psutil.net_io_counters()
+            if nio:
+                net_io = {
+                    "bytes_sent": int(nio.bytes_sent),
+                    "bytes_recv": int(nio.bytes_recv),
+                    "packets_sent": int(getattr(nio, "packets_sent", 0)),
+                    "packets_recv": int(getattr(nio, "packets_recv", 0)),
+                    "errin": int(getattr(nio, "errin", 0)),
+                    "errout": int(getattr(nio, "errout", 0)),
+                    "dropin": int(getattr(nio, "dropin", 0)),
+                    "dropout": int(getattr(nio, "dropout", 0)),
+                }
+        except Exception:
+            net_io = None
+
+        disk_io: Optional[Dict[str, int]] = None
+        try:
+            dio = psutil.disk_io_counters(perdisk=False)
+            if dio:
+                disk_io = {
+                    "read_bytes": int(dio.read_bytes),
+                    "write_bytes": int(dio.write_bytes),
+                    "read_count": int(dio.read_count),
+                    "write_count": int(dio.write_count),
+                }
+        except Exception:
+            disk_io = None
+
+        net_interfaces: List[Dict[str, Any]] = []
+        try:
+            stats_map = psutil.net_if_stats()
+            pernic = psutil.net_io_counters(pernic=True)
+            for name, io in list(pernic.items())[:12]:
+                st = stats_map.get(name)
+                net_interfaces.append(
+                    {
+                        "name": name[:32],
+                        "bytes_sent": int(io.bytes_sent),
+                        "bytes_recv": int(io.bytes_recv),
+                        "packets_sent": int(io.packets_sent),
+                        "packets_recv": int(io.packets_recv),
+                        "is_up": bool(st.isup) if st is not None else None,
+                        "speed_mbps": int(st.speed) if st is not None and st.speed > 0 else None,
+                    }
+                )
+        except Exception:
+            net_interfaces = []
+
+        return {
+            "available": True,
+            "hostname": plat.node() or "",
+            "platform": f"{plat.system()} {plat.release()}".strip(),
+            "python_bits": 64 if sys.maxsize > 2**32 else 32,
+            "boot_time_utc": datetime.fromtimestamp(boot, tz=timezone.utc).isoformat(),
+            "uptime_sec": max(0.0, now_ts - boot),
+            "cpu_percent": cpu_pct,
+            "cpu_count_logical": cpu_logical,
+            "cpu_count_physical": int(cpu_physical) if cpu_physical is not None else None,
+            "cpu_per_core": per_core,
+            "memory": {
+                "total": int(mem.total),
+                "available": int(mem.available),
+                "used": int(mem.used),
+                "percent": float(mem.percent),
+            },
+            "swap": {
+                "total": int(swap.total),
+                "used": int(swap.used),
+                "free": int(swap.free),
+                "percent": float(swap.percent),
+            },
+            "disks": disks[:8],
+            "process_count": process_count,
+            "load_average": load_avg,
+            "net_io": net_io,
+            "disk_io": disk_io,
+            "net_interfaces": net_interfaces[:8],
+        }
+    except Exception as ex:
+        logger.warning("system/host: falha ao recolher métricas: %s", ex)
+        return {"available": False, "reason": "collection_error", "detail": str(ex)}
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="IA Biomimética — Bio Console API", version=VERSION)
 
@@ -564,6 +944,14 @@ def create_app() -> FastAPI:
             },
             "version": VERSION,
         }
+
+    @app.get(f"{API_PREFIX}/system/host")
+    def system_host() -> Dict[str, Any]:
+        """
+        CPU/RAM/swap/discos do **servidor** onde corre esta API (psutil).
+        O browser não tem acesso a estes valores; use quando a API aponta para a sua máquina ou LAN.
+        """
+        return _collect_host_metrics()
 
     @app.get(f"{API_PREFIX}/brain/status")
     def brain_status() -> Dict[str, Any]:
@@ -609,6 +997,31 @@ def create_app() -> FastAPI:
         _state["brain"] = settings.model_dump()
         reset_engine()
         return settings
+
+    @app.get(f"{API_PREFIX}/agent/welcome")
+    def agent_welcome() -> Dict[str, Any]:
+        """
+        Mensagem de apresentação para nova conversa (UI pode ler em voz com ElevenLabs).
+        Personalizar: CHOKMAH_WELCOME_MESSAGE ou CHOKMAH_AGENT_NAME no .env.
+        Regista abertura no Obsidian se cofre e OBSIDIAN_LOG_AGENT_EVENTS activos.
+        """
+        name = os.environ.get("CHOKMAH_AGENT_NAME", "CHOKMAH").strip() or "CHOKMAH"
+        custom = os.environ.get("CHOKMAH_WELCOME_MESSAGE", "").strip()
+        text = custom if custom else _default_chokmah_welcome(name)
+        _maybe_obsidian_log_agent_event(
+            kind="abertura_ui",
+            detail="Pedido de boas-vindas / apresentação ao utilizador (nova conversa).",
+            agent_name=name,
+        )
+        return {
+            "message": text,
+            "agent_name": name,
+            "pillars": [
+                "evolucao_biomimetica",
+                "memoria_obsidian",
+                "dialogo_voz",
+            ],
+        }
 
     @app.get(f"{API_PREFIX}/agent/episodes")
     def agent_episodes(limit: int = 30) -> Dict[str, Any]:
@@ -665,23 +1078,43 @@ def create_app() -> FastAPI:
     @app.get(f"{API_PREFIX}/tts/elevenlabs/status")
     def tts_elevenlabs_status() -> Dict[str, Any]:
         """Indica se TTS ElevenLabs está configurável (sem expor segredos)."""
+        refresh_bio_console_dotenv_from_files()
         key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
         vid = os.environ.get("ELEVENLABS_VOICE_ID", "").strip()
+        ssl_relaxed = os.environ.get("ELEVENLABS_SSL_VERIFY", "").strip().lower() in (
+            "0",
+            "false",
+            "no",
+            "off",
+        )
+        ca = os.environ.get("ELEVENLABS_CA_BUNDLE", "").strip()
+        lang = bool(os.environ.get("ELEVENLABS_LANGUAGE_CODE", "").strip())
+        model_id = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2").strip()
+        bio_override = (_REPO_ROOT / "bio_console.env").is_file()
         return {
             "available": bool(key and vid),
             "api_key_set": bool(key),
             "default_voice_set": bool(vid),
+            "ssl_verify_relaxed": ssl_relaxed,
+            "ca_bundle_configured": bool(ca) and Path(ca).expanduser().is_file(),
+            "language_code_set": lang,
+            "model_id": (model_id or "eleven_multilingual_v2")[:64],
+            "voice_id_tail": _elevenlabs_voice_id_tail(vid),
+            "bio_console_env_present": bio_override,
         }
 
     @app.get(f"{API_PREFIX}/obsidian/status")
     def obsidian_status() -> Dict[str, Any]:
         """Cofre Obsidian (ficheiros locais). Sem OBSIDIAN_VAULT_ROOT as gravações ficam desativadas."""
         root = vault_root_from_env()
+        auto = os.environ.get("OBSIDIAN_AUTO_LOG_CHAT", "true").strip().lower()
+        auto_on = auto not in ("0", "false", "no", "off")
         return {
             "vault_configured": root is not None,
             "vault_ready": bool(root and root.is_dir()),
             "chokmah_folder": chokmah_subdir(),
             "write_token_required": bool(os.environ.get("OBSIDIAN_WRITE_TOKEN", "").strip()),
+            "auto_log_chat": bool(root and root.is_dir() and auto_on),
         }
 
     @app.post(f"{API_PREFIX}/obsidian/note")
@@ -728,6 +1161,7 @@ def create_app() -> FastAPI:
         """
         Proxy Text-to-Speech ElevenLabs (áudio MPEG). A API key fica apenas no servidor.
         """
+        refresh_bio_console_dotenv_from_files()
         if not requests:
             raise HTTPException(status_code=503, detail="requests não instalado")
         api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
@@ -742,15 +1176,13 @@ def create_app() -> FastAPI:
                 status_code=503,
                 detail="Defina ELEVENLABS_VOICE_ID ou envie voice_id no JSON",
             )
-        model_id = os.environ.get("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2").strip()
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice}"
-        payload: Dict[str, Any] = {
-            "text": body.text.strip()[:_ELEVENLABS_TTS_MAX_CHARS],
-            "model_id": model_id or "eleven_multilingual_v2",
-        }
+        payload = _elevenlabs_tts_json_body(body.text)
+        q = _elevenlabs_tts_query_params()
         try:
             r = requests.post(
                 url,
+                params=q or None,
                 headers={
                     "xi-api-key": api_key,
                     "Accept": "audio/mpeg",
@@ -758,10 +1190,17 @@ def create_app() -> FastAPI:
                 },
                 json=payload,
                 timeout=120,
+                verify=_elevenlabs_requests_verify(),
             )
         except Exception as e:
             logger.warning("ElevenLabs TTS falhou (rede): %s", e)
-            raise HTTPException(status_code=502, detail=f"ElevenLabs: {e}") from e
+            hint = ""
+            if "CERTIFICATE_VERIFY_FAILED" in str(e) or "SSL" in str(e):
+                hint = (
+                    " Se estiver atrás de proxy corporativo, defina ELEVENLABS_CA_BUNDLE=caminho\\ca.pem "
+                    "ou temporariamente ELEVENLABS_SSL_VERIFY=false no .env da API."
+                )
+            raise HTTPException(status_code=502, detail=f"ElevenLabs: {e}{hint}") from e
 
         if r.status_code != 200:
             err = r.text[:500] if r.text else r.reason
@@ -793,6 +1232,12 @@ def create_app() -> FastAPI:
         if not messages:
             raise HTTPException(status_code=400, detail="message ou messages obrigatório")
 
+        try:
+            max_hist = int(os.environ.get("CHAT_MAX_MESSAGES", "40"))
+        except ValueError:
+            max_hist = 40
+        messages = _trim_chat_messages(messages, max_hist)
+
         mode = (body.mode or "chat").strip().lower()
         is_agent = mode == "agent"
 
@@ -804,7 +1249,11 @@ def create_app() -> FastAPI:
                 system = f"{system}\n\n{extra}"
             ollama_messages = [{"role": "system", "content": system}, *messages]
         else:
-            ollama_messages = list(messages)
+            chat_sys = _load_chat_conversation_system_prompt()
+            extra_chat = os.environ.get("CHAT_SYSTEM_PROMPT_SUFFIX", "").strip()
+            if extra_chat:
+                chat_sys = f"{chat_sys}\n\n{extra_chat}"
+            ollama_messages = [{"role": "system", "content": chat_sys}, *messages]
 
         try:
             data = _ollama_chat_request(
@@ -826,6 +1275,7 @@ def create_app() -> FastAPI:
             if not answer:
                 answer = raw_content
             biomimetic = _log_agent_episode(body, answer, reasoning)
+            _maybe_obsidian_log_chat(body, answer, reasoning or None, "agent")
             return {
                 "answer": answer,
                 "provider": "local",
@@ -840,6 +1290,7 @@ def create_app() -> FastAPI:
                 },
             }
 
+        _maybe_obsidian_log_chat(body, raw_content, None, "chat")
         return {
             "answer": raw_content,
             "provider": "local",

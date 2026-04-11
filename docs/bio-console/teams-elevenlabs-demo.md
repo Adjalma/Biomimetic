@@ -13,6 +13,8 @@
 | `ELEVENLABS_API_KEY` | Sim, para TTS | Chave na consola ElevenLabs (não uses email no código; só esta chave). |
 | `ELEVENLABS_VOICE_ID` | Sim, por omissão | ID da voz (página da voz no ElevenLabs). |
 | `ELEVENLABS_MODEL_ID` | Não | Default `eleven_multilingual_v2`. |
+| `ELEVENLABS_CA_BUNDLE` | Não | Caminho absoluto a um `.pem` com a CA interna (recomendado em proxy SSL corporativo). |
+| `ELEVENLABS_SSL_VERIFY` | Não | `false` só se a verificação SSL falhar (`CERTIFICATE_VERIFY_FAILED`) e a política de TI permitir; preferir `ELEVENLABS_CA_BUNDLE`. |
 
 Reinicia a API após alterar envs.
 

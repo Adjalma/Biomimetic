@@ -46,5 +46,6 @@ jobs:
           python -c "import numpy; print(f'✅ NumPy {numpy.__version__} importado')"
           python -c "import sys; sys.path.insert(0, 'src'); import app.bio_console_api; print('✅ Bio Console API importada com sucesso')"
           python -c "import sys; sys.path.insert(0, 'src'); import systems.sistemas.sistema_meta_learning_biomimetico; print('✅ Sistema biomimético importado com sucesso')"
+      # Contratos: chat agente, Obsidian, Z-API, proxy ElevenLabs (payload/query).
       - name: Bio Console API contract tests
         run: python -m pytest tests/test_bio_console_api_contract.py -v --tb=short

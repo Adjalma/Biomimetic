@@ -9,6 +9,7 @@ Integração por **ficheiros Markdown** no cofre local. O Obsidian lê automatic
 | `OBSIDIAN_VAULT_ROOT` | Caminho **absoluto** da pasta do cofre (a mesma que abres no Obsidian). |
 | `OBSIDIAN_CHOKMAH_RELATIVE` | Subpasta dentro do cofre (default: `CHOKMAH`). |
 | `OBSIDIAN_WRITE_TOKEN` | Opcional. Se definido, `POST /api/v1/obsidian/note` exige o cabeçalho `X-Obsidian-Write-Token` com o mesmo valor. |
+| `OBSIDIAN_AUTO_LOG_CHAT` | Default `true`. Cada resposta bem-sucedida de `POST /api/v1/chat` acrescenta uma entrada em `CHOKMAH/dialogos/AAAA-MM-DD.md` (pergunta, resposta, raciocínio do agente se houver). Defina `false` para desligar. |
 
 ### Se `obsidian/status` mostra `vault_configured: false`
 

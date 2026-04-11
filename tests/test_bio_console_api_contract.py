@@ -7,6 +7,7 @@ Requer PyTorch (import do motor). Sem Ollama: usa monkeypatch em _ollama_chat_re
 from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -75,6 +76,15 @@ def test_evolution_status_merges_engine_and_episodes(client: TestClient, engine_
     engine_mock.get_agent_evolution_snapshot.assert_called_once()
 
 
+def test_agent_welcome_ok(client: TestClient):
+    r = client.get("/api/v1/agent/welcome")
+    assert r.status_code == 200
+    data = r.json()
+    assert "message" in data and len(data["message"]) > 20
+    assert data.get("agent_name")
+    assert isinstance(data.get("pillars"), list)
+
+
 def test_agent_episodes_empty(client: TestClient):
     r = client.get("/api/v1/agent/episodes?limit=5")
     assert r.status_code == 200
@@ -122,6 +132,35 @@ def test_chat_requires_message(client: TestClient):
     assert r.status_code == 400
 
 
+def test_chat_agent_appends_obsidian_dialog(tmp_path, monkeypatch, engine_mock: MagicMock):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    monkeypatch.setenv("OBSIDIAN_VAULT_ROOT", str(vault))
+    monkeypatch.setenv("OBSIDIAN_AUTO_LOG_CHAT", "true")
+    monkeypatch.setenv("OBSIDIAN_CHOKMAH_RELATIVE", "CHOKMAH")
+    monkeypatch.setattr(bc, "get_engine", lambda: engine_mock)
+
+    def fake_ollama(*_a, **_k):
+        return {"message": {"content": "---RACIOCINIO---\npassos\n---RESPOSTA---\nOi."}}
+
+    monkeypatch.setattr(bc, "_ollama_chat_request", fake_ollama)
+    monkeypatch.setattr(bc, "_ollama_tags_reachable", lambda _url: True)
+
+    c = TestClient(bc.app)
+    r = c.post(
+        "/api/v1/chat",
+        json={"message": "ola", "messages": [], "mode": "agent", "session_id": "s99"},
+    )
+    assert r.status_code == 200
+    day = date.today().isoformat()
+    p = vault / "CHOKMAH" / "dialogos" / f"{day}.md"
+    assert p.is_file()
+    text = p.read_text(encoding="utf-8")
+    assert "ola" in text
+    assert "Oi." in text
+    assert "passos" in text
+
+
 def test_tts_elevenlabs_status(client: TestClient):
     r = client.get("/api/v1/tts/elevenlabs/status")
     assert r.status_code == 200
@@ -129,6 +168,67 @@ def test_tts_elevenlabs_status(client: TestClient):
     assert "available" in data
     assert "api_key_set" in data
     assert "default_voice_set" in data
+    assert "ssl_verify_relaxed" in data
+    assert "ca_bundle_configured" in data
+    assert "language_code_set" in data
+    assert "model_id" in data
+    assert "voice_id_tail" in data
+    assert data.get("voice_id_tail") is None or isinstance(data.get("voice_id_tail"), str)
+    assert isinstance(data.get("bio_console_env_present"), bool)
+
+
+def test_elevenlabs_voice_id_tail_unit():
+    assert bc._elevenlabs_voice_id_tail("abcdefghijklmnop") == "klmnop"
+    assert bc._elevenlabs_voice_id_tail("short") == "short"
+    assert bc._elevenlabs_voice_id_tail("") is None
+    assert bc._elevenlabs_voice_id_tail("   ") is None
+
+
+def test_tts_elevenlabs_proxy_payload_and_query(monkeypatch, client: TestClient):
+    monkeypatch.setattr(bc, "refresh_bio_console_dotenv_from_files", lambda: None)
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key")
+    monkeypatch.setenv("ELEVENLABS_VOICE_ID", "voice-id-1")
+    monkeypatch.setenv("ELEVENLABS_SPEED", "0.88")
+    monkeypatch.setenv("ELEVENLABS_LANGUAGE_CODE", "pt")
+    monkeypatch.setenv("ELEVENLABS_OUTPUT_FORMAT", "mp3_44100_128")
+    monkeypatch.setenv("ELEVENLABS_OPTIMIZE_STREAMING_LATENCY", "0")
+    calls: list[dict] = []
+
+    def fake_post(url, headers=None, json=None, params=None, timeout=None, verify=None):
+        calls.append({"url": url, "json": json, "params": params or {}})
+        class Resp:
+            status_code = 200
+            content = b"\xff\xf3"
+            text = ""
+
+        return Resp()
+
+    monkeypatch.setattr(bc.requests, "post", fake_post)
+    r = client.post("/api/v1/tts/elevenlabs", json={"text": "  Olá mundo  "})
+    assert r.status_code == 200
+    assert len(calls) == 1
+    body = calls[0]["json"]
+    assert body["text"] == "Olá mundo"
+    assert body["language_code"] == "pt"
+    assert body["voice_settings"]["speed"] == 0.88
+    assert calls[0]["params"].get("output_format") == "mp3_44100_128"
+    assert calls[0]["params"].get("optimize_streaming_latency") == 0
+    assert "voice-id-1" in calls[0]["url"]
+
+
+def test_elevenlabs_voice_settings_natural_defaults(monkeypatch):
+    for k in (
+        "ELEVENLABS_SPEED",
+        "ELEVENLABS_STABILITY",
+        "ELEVENLABS_SIMILARITY_BOOST",
+        "ELEVENLABS_STYLE",
+    ):
+        monkeypatch.delenv(k, raising=False)
+    s = bc._elevenlabs_voice_settings()
+    assert s["speed"] == 0.97
+    assert s["stability"] == 0.36
+    assert s["similarity_boost"] == 0.78
+    assert s["style"] == 0.32
 
 
 def test_whatsapp_zapi_status(client: TestClient):
@@ -154,6 +254,7 @@ def test_obsidian_status(monkeypatch, client: TestClient):
     assert r.status_code == 200
     data = r.json()
     assert data.get("vault_configured") is False
+    assert data.get("auto_log_chat") is False
     assert "chokmah_folder" in data
 
 
@@ -222,3 +323,14 @@ def test_obsidian_note_rejects_traversal(tmp_path, monkeypatch, engine_mock: Mag
         json={"relative_path": "../escape.md", "body": "x"},
     )
     assert r.status_code == 400
+
+
+def test_system_host_shape(client: TestClient):
+    r = client.get("/api/v1/system/host")
+    assert r.status_code == 200
+    body = r.json()
+    assert "available" in body
+    if body.get("available") is True:
+        assert "cpu_percent" in body
+        assert "memory" in body and isinstance(body["memory"], dict)
+        assert "percent" in body["memory"]
