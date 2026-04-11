@@ -1,0 +1,64 @@
+# REQUIREMENTS PARA FASES 8, 9, 10: PARTICIPAÇÃO EM REUNIÕES
+# ==========================================================
+# Dependências para integração com Google Meet, protocolos de etiqueta,
+# hierarquia organizacional, gestão de relacionamentos e aprendizado com interações
+
+# AUTOMAÇÃO DE NAVEGADOR PARA GOOGLE MEET (Fase 8)
+selenium>=4.15.0
+webdriver-manager>=4.0.1  # Gerenciamento automático de drivers
+
+# PLAYWRIGHT (alternativa para automação mais robusta)
+# playwright já está em requirements_unificado.txt
+
+# PROCESSAMENTO DE ÁUDIO PARA TRANSCRIÇÃO (Fase 8)
+speechrecognition>=3.10.0  # Suporte para múltiplos engines (Google, Whisper, etc.)
+pydub>=0.25.1  # Manipulação de áudio
+pyaudio>=0.2.14  # Captura de áudio (opcional, requer portaudio)
+
+# GOOGLE CLOUD SPEECH-TO-TEXT (opcional, melhor qualidade)
+google-cloud-speech>=2.21.0
+
+# OPENAI WHISPER (opcional, offline)
+openai-whisper>=20231117  # ou pip install git+https://github.com/openai/whisper.git
+
+# ANÁLISE DE SENTIMENTO E PROCESSAMENTO DE LINGUAGEM (Fase 8-10)
+# (já coberto por transformers, spacy, nltk em requirements_unificado.txt)
+
+# SERIALIZAÇÃO DE DADOS PARA APRENDIZADO (Fase 10)
+pickle5>=0.0.11  # Para compatibilidade com Python 3.8+
+dill>=0.3.7  # Serialização de objetos Python
+joblib>=1.1.0  # Já incluído
+
+# ANÁLISE DE SÉRIES TEMPORAIS PARA PADRÕES DE INTERAÇÃO (Fase 10)
+statsmodels>=0.14.0
+pmdarima>=2.0.4  # Auto-ARIMA
+prophet>=1.1.5  # Forecasting do Facebook
+
+# VISUALIZAÇÃO DE RELACIONAMENTOS (Fase 9)
+networkx>=3.1  # Já incluído
+pyvis>=0.3.2  # Visualização interativa de grafos
+
+# BANCO DE DADOS PARA ARMAZENAMENTO DE RELACIONAMENTOS (Fase 9, opcional)
+sqlalchemy>=2.0.0  # Já incluído
+alembic>=1.16.4  # Já incluído
+
+# GOOGLE APIS (para integração com Calendar e Gmail, já em requirements_google.txt)
+# google-api-python-client>=2.108.0
+# google-auth-httplib2>=0.1.0
+# google-auth-oauthlib>=1.0.0
+# google-auth>=2.23.0
+
+# NOTAS DE INSTALAÇÃO:
+# 1. Para selenium: necessário driver do Chrome/Firefox (webdriver-manager cuida disso)
+# 2. Para pyaudio no Linux: sudo apt-get install portaudio19-dev python3-pyaudio
+# 3. Para speechrecognition com microfone: pip install pyaudio
+# 4. Para Google Cloud Speech: necessário credentials JSON do Google Cloud
+# 5. Para Whisper: requer ffmpeg (sudo apt-get install ffmpeg)
+#
+# INSTALAÇÃO MÍNIMA PARA DEMONSTRAÇÃO:
+# pip install selenium webdriver-manager speechrecognition pydub
+#
+# INSTALAÇÃO COMPLETA:
+# pip install -r requirements/requirements_meeting.txt
+#
+# AVISO: Nunca commitar credenciais (credentials.json, token.pickle) no Git!
