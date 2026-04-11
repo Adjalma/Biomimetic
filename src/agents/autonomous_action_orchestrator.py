@@ -72,6 +72,28 @@ except ImportError:
     logger.warning("JarvisMemoryAgent não disponível")
     MEMORY_AGENT_AVAILABLE = False
 
+# Importações para novos módulos de segurança e monitoramento
+try:
+    from agents.security_protocols import SecurityProtocols, SecurityLevel, UserTrustLevel
+    SECURITY_PROTOCOLS_AVAILABLE = True
+except ImportError:
+    logger.warning("SecurityProtocols não disponível")
+    SECURITY_PROTOCOLS_AVAILABLE = False
+
+try:
+    from agents.hierarchy_integration import HierarchyIntegration, HierarchyDecision, FormalizationLevel
+    HIERARCHY_INTEGRATION_AVAILABLE = True
+except ImportError:
+    logger.warning("HierarchyIntegration não disponível")
+    HIERARCHY_INTEGRATION_AVAILABLE = False
+
+try:
+    from agents.proactive_monitor import ProactiveMonitor, AlertSeverity, MetricType
+    PROACTIVE_MONITOR_AVAILABLE = True
+except ImportError:
+    logger.warning("ProactiveMonitor não disponível")
+    PROACTIVE_MONITOR_AVAILABLE = False
+
 # WhatsApp e TTS são gerenciados via Bio Console API (HTTP)
 WHATSAPP_AVAILABLE = False
 TTS_AVAILABLE = False
@@ -622,6 +644,33 @@ class AutonomousActionOrchestrator:
             except Exception as e:
                 logger.error(f"❌ Falha ao inicializar sistema biomimético: {e}")
         
+        # Inicializar protocolos de segurança
+        self.security_protocols = None
+        if SECURITY_PROTOCOLS_AVAILABLE:
+            try:
+                self.security_protocols = SecurityProtocols()
+                logger.info("✅ SecurityProtocols inicializado")
+            except Exception as e:
+                logger.error(f"❌ Falha ao inicializar SecurityProtocols: {e}")
+        
+        # Inicializar integração de hierarquia
+        self.hierarchy_integration = None
+        if HIERARCHY_INTEGRATION_AVAILABLE:
+            try:
+                self.hierarchy_integration = HierarchyIntegration()
+                logger.info("✅ HierarchyIntegration inicializado")
+            except Exception as e:
+                logger.error(f"❌ Falha ao inicializar HierarchyIntegration: {e}")
+        
+        # Inicializar monitor proativo
+        self.proactive_monitor = None
+        if PROACTIVE_MONITOR_AVAILABLE:
+            try:
+                self.proactive_monitor = ProactiveMonitor()
+                logger.info("✅ ProactiveMonitor inicializado")
+            except Exception as e:
+                logger.error(f"❌ Falha ao inicializar ProactiveMonitor: {e}")
+        
         # Registrar ações padrão
         self._register_default_actions()
     
@@ -700,19 +749,26 @@ class AutonomousActionOrchestrator:
             context=self.context
         )
         
-        # 4. Verificar aprovação humana se necessário
+        # 4. Avaliar segurança e hierarquia da ação
+        security_evaluation = self._evaluate_action_security(request, situation)
+        request.security_evaluation = security_evaluation
+        
+        # 5. Verificar aprovação humana se necessário (considerando segurança e hierarquia)
         if self.require_human_approval and self._requires_human_approval(request):
             request.status = "awaiting_approval"
             logger.info(f"Ação {request.request_id} aguardando aprovação humana")
+            # Registrar avaliação de segurança no histórico
+            self._record_security_evaluation(request, security_evaluation)
             return request
         
-        # 5. Executar ação
+        # 6. Executar ação
         request = self.executor.execute(request)
         
-        # 6. Atualizar métricas
+        # 7. Registrar métricas e monitoramento proativo
         self._update_metrics(request)
+        self._record_action_for_monitoring(request, decision_info, security_evaluation)
         
-        # 7. Aprender com resultado (se sistema biomimético disponível)
+        # 8. Aprender com resultado (se sistema biomimético disponível)
         if self.biomimetic_system and BIOMIMETIC_SYSTEM_AVAILABLE:
             self._learn_from_action(request, decision_info)
         
@@ -782,22 +838,258 @@ class AutonomousActionOrchestrator:
         return priority_map.get(urgency, ActionPriority.MEDIUM)
     
     def _requires_human_approval(self, request: ActionRequest) -> bool:
-        """Determina se ação requer aprovação humana"""
+        """Determina se ação requer aprovação humana usando protocolos de segurança e hierarquia"""
+        
         # Ações críticas sempre requerem aprovação
         if request.priority == ActionPriority.CRITICAL:
+            logger.info(f"Ação {request.request_id} requer aprovação: prioridade CRÍTICA")
             return True
         
+        # Usar SecurityProtocols se disponível
+        if self.security_protocols:
+            try:
+                # Preparar contexto para avaliação de segurança
+                security_context = {
+                    "user_id": request.context.user_id,
+                    "timestamp": request.created_at.isoformat(),
+                    "environment": request.context.environment,
+                    "action_history_count": len(self.action_history),
+                }
+                
+                # Avaliar ação com SecurityProtocols
+                security_evaluation = self.security_protocols.evaluate_action(
+                    action_type=request.action_type.value,
+                    parameters=request.parameters,
+                    context=security_context
+                )
+                
+                # Se requer aprovação baseado em segurança
+                if security_evaluation.get("requires_approval", False):
+                    reason = security_evaluation.get("approval_reason", "Razão de segurança")
+                    logger.info(f"Ação {request.request_id} requer aprovação (SecurityProtocols): {reason}")
+                    return True
+                
+            except Exception as e:
+                logger.error(f"Erro ao avaliar segurança: {e}")
+                # Fallback para lógica padrão
+        
+        # Usar HierarchyIntegration se disponível
+        if self.hierarchy_integration:
+            try:
+                # Preparar contexto hierárquico
+                hierarchy_context = {
+                    "user_id": request.context.user_id,
+                    "participants": self._extract_participants_from_request(request),
+                    "action_type": request.action_type.value,
+                    "parameters": request.parameters,
+                }
+                
+                # Avaliar ação com hierarquia
+                hierarchy_evaluation = self.hierarchy_integration.evaluate_action_with_hierarchy(
+                    action_type=request.action_type.value,
+                    parameters=request.parameters,
+                    context=hierarchy_context
+                )
+                
+                # Verificar decisão hierárquica
+                hierarchy_decision = hierarchy_evaluation.get("hierarchy_decision", "")
+                if hierarchy_decision in ["require_approval", "require_manager_approval", "require_executive_approval"]:
+                    reason = hierarchy_evaluation.get("decision_reason", "Razão hierárquica")
+                    logger.info(f"Ação {request.request_id} requer aprovação (HierarchyIntegration): {reason}")
+                    return True
+                
+            except Exception as e:
+                logger.error(f"Erro ao avaliar hierarquia: {e}")
+                # Fallback para lógica padrão
+        
+        # Lógica padrão (fallback)
         # Ações com alto impacto (ex: enviar para muitos destinatários)
         if request.action_type == ActionType.SEND_EMAIL:
             recipients = request.parameters.get("to", [])
             if isinstance(recipients, list) and len(recipients) > 5:
+                logger.info(f"Ação {request.request_id} requer aprovação: muitos destinatários ({len(recipients)})")
                 return True
         
         # Configuração global
-        return self.require_human_approval
+        if self.require_human_approval:
+            logger.info(f"Ação {request.request_id} requer aprovação: configuração global require_human_approval=True")
+            return True
+        
+        # Não requer aprovação
+        logger.debug(f"Ação {request.request_id} não requer aprovação humana")
+        return False
+    
+    def _extract_participants_from_request(self, request: ActionRequest) -> List[str]:
+        """Extrai participantes do contexto da requisição"""
+        participants = set()
+        
+        # Extrair do contexto
+        if hasattr(request.context, 'metadata') and 'participants' in request.context.metadata:
+            participants.update(request.context.metadata['participants'])
+        
+        # Extrair dos parâmetros
+        for key in ["to", "recipients", "attendees", "participants"]:
+            if key in request.parameters:
+                value = request.parameters[key]
+                if isinstance(value, list):
+                    participants.update(value)
+                elif isinstance(value, str):
+                    participants.add(value)
+        
+        # Adicionar usuário do contexto
+        if request.context.user_id and request.context.user_id != "default":
+            participants.add(request.context.user_id)
+        
+        return list(participants)
+    
+    def _evaluate_action_security(self, request: ActionRequest, situation: Dict[str, Any]) -> Dict[str, Any]:
+        """Avalia segurança e hierarquia de uma ação"""
+        evaluation = {
+            "security": {},
+            "hierarchy": {},
+            "combined_risk_score": 0.0,
+            "requires_approval": False,
+            "approval_reason": "",
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        # Avaliação de segurança
+        if self.security_protocols:
+            try:
+                security_context = {
+                    "user_id": request.context.user_id,
+                    "timestamp": request.created_at.isoformat(),
+                    "environment": request.context.environment,
+                    "action_history_count": len(self.action_history),
+                    "situation_type": situation.get("type", "unknown"),
+                }
+                
+                security_eval = self.security_protocols.evaluate_action(
+                    action_type=request.action_type.value,
+                    parameters=request.parameters,
+                    context=security_context
+                )
+                evaluation["security"] = security_eval
+                
+                # Atualizar risco combinado
+                risk_score = security_eval.get("risk_score", 0.0)
+                evaluation["combined_risk_score"] += risk_score * 0.7  # Peso 70% para segurança
+                
+                if security_eval.get("requires_approval", False):
+                    evaluation["requires_approval"] = True
+                    evaluation["approval_reason"] = security_eval.get("approval_reason", "Razão de segurança")
+                    
+            except Exception as e:
+                logger.error(f"Erro na avaliação de segurança: {e}")
+                evaluation["security"]["error"] = str(e)
+        
+        # Avaliação de hierarquia
+        if self.hierarchy_integration:
+            try:
+                hierarchy_context = {
+                    "user_id": request.context.user_id,
+                    "participants": self._extract_participants_from_request(request),
+                    "action_type": request.action_type.value,
+                    "parameters": request.parameters,
+                    "situation": situation,
+                }
+                
+                hierarchy_eval = self.hierarchy_integration.evaluate_action_with_hierarchy(
+                    action_type=request.action_type.value,
+                    parameters=request.parameters,
+                    context=hierarchy_context
+                )
+                evaluation["hierarchy"] = hierarchy_eval
+                
+                # Atualizar risco combinado
+                hierarchy_decision = hierarchy_eval.get("hierarchy_decision", "")
+                if hierarchy_decision in ["require_approval", "require_manager_approval", "require_executive_approval"]:
+                    hierarchy_risk = 0.6  # Risco médio para ações que requerem aprovação hierárquica
+                elif hierarchy_decision == "block_action":
+                    hierarchy_risk = 1.0  # Risco máximo para ações bloqueadas
+                else:
+                    hierarchy_risk = 0.1  # Risco baixo
+                
+                evaluation["combined_risk_score"] += hierarchy_risk * 0.3  # Peso 30% para hierarquia
+                
+                if hierarchy_decision in ["require_approval", "require_manager_approval", "require_executive_approval"]:
+                    evaluation["requires_approval"] = True
+                    if not evaluation["approval_reason"]:
+                        evaluation["approval_reason"] = hierarchy_eval.get("decision_reason", "Razão hierárquica")
+                    else:
+                        evaluation["approval_reason"] += f"; {hierarchy_eval.get('decision_reason', 'Razão hierárquica')}"
+                        
+            except Exception as e:
+                logger.error(f"Erro na avaliação de hierarquia: {e}")
+                evaluation["hierarchy"]["error"] = str(e)
+        
+        # Normalizar risco entre 0 e 1
+        evaluation["combined_risk_score"] = min(1.0, evaluation["combined_risk_score"])
+        
+        logger.info(f"Avaliação de segurança para ação {request.request_id}: risco={evaluation['combined_risk_score']:.2f}, aprovação={evaluation['requires_approval']}")
+        return evaluation
+    
+    def _record_security_evaluation(self, request: ActionRequest, security_evaluation: Dict[str, Any]):
+        """Registra avaliação de segurança no histórico da ação"""
+        if not hasattr(request, 'security_evaluation'):
+            request.security_evaluation = {}
+        
+        request.security_evaluation = security_evaluation
+        
+        # Adicionar ao histórico de ações (se ação está aguardando aprovação)
+        if request.status == "awaiting_approval":
+            action_record = {
+                "request_id": request.request_id,
+                "action_type": request.action_type.value,
+                "timestamp": datetime.now().isoformat(),
+                "status": "awaiting_approval",
+                "security_evaluation": security_evaluation,
+                "parameters_summary": {k: str(v)[:100] for k, v in request.parameters.items() if k not in ["password", "token", "secret"]}
+            }
+            self.action_history.append(action_record)
+            logger.info(f"Avaliação de segurança registrada para ação {request.request_id} (aguardando aprovação)")
+    
+    def _record_action_for_monitoring(self, request: ActionRequest, decision_info: Dict[str, Any], 
+                                     security_evaluation: Dict[str, Any]):
+        """Registra ação para monitoramento proativo"""
+        if not self.proactive_monitor:
+            return
+        
+        try:
+            # Preparar resultado para monitoramento
+            action_result = {
+                "action_type": request.action_type.value,
+                "status": request.status,
+                "execution_time": request.execution_time,
+                "success": request.status == "completed",
+                "risk_score": security_evaluation.get("combined_risk_score", 0.0),
+                "error": request.error,
+                "result": request.result,
+                "decision_confidence": decision_info.get("confidence", 0.0),
+                "timestamp": datetime.now().isoformat(),
+                "request_id": request.request_id,
+            }
+            
+            # Registrar no monitor proativo
+            self.proactive_monitor.record_action(action_result)
+            logger.debug(f"Ação {request.request_id} registrada para monitoramento proativo")
+            
+            # Verificar métricas periodicamente
+            self.proactive_monitor.check_metrics()
+            
+            # Verificar se há alertas ativos
+            active_alerts = self.proactive_monitor.active_alerts
+            if active_alerts:
+                for alert in active_alerts[:3]:  # Mostrar até 3 alertas mais recentes
+                    if alert.get("severity") in ["high", "critical"] and not alert.get("acknowledged", False):
+                        logger.warning(f"🚨 ALERTA ATIVO: {alert.get('title', 'Sem título')}")
+                        
+        except Exception as e:
+            logger.error(f"Erro ao registrar ação para monitoramento: {e}")
     
     def _update_metrics(self, request: ActionRequest):
-        """Atualiza métricas de performance"""
+        """Atualiza métricas de performance e integra com monitor proativo"""
+        # Atualizar métricas internas
         self.performance_metrics["total_actions"] += 1
         
         if request.status == "completed":
@@ -810,6 +1102,28 @@ class AutonomousActionOrchestrator:
             total_time = self.performance_metrics["avg_execution_time"] * (self.performance_metrics["total_actions"] - 1)
             total_time += request.execution_time
             self.performance_metrics["avg_execution_time"] = total_time / self.performance_metrics["total_actions"]
+        
+        # Atualizar monitor proativo se disponível
+        if self.proactive_monitor:
+            try:
+                # Calcular métricas para o monitor
+                success_rate = 0.0
+                if self.performance_metrics["total_actions"] > 0:
+                    success_rate = self.performance_metrics["successful_actions"] / self.performance_metrics["total_actions"]
+                
+                error_rate = 0.0
+                if self.performance_metrics["total_actions"] > 0:
+                    error_rate = self.performance_metrics["failed_actions"] / self.performance_metrics["total_actions"]
+                
+                # Registrar métricas agregadas (opcional)
+                # O monitor proativo já registra cada ação individualmente via _record_action_for_monitoring
+                # Aqui poderíamos registrar métricas agregadas periodicamente
+                
+            except Exception as e:
+                logger.error(f"Erro ao atualizar monitor proativo: {e}")
+        
+        # Log de métricas atualizadas
+        logger.debug(f"Métricas atualizadas: total={self.performance_metrics['total_actions']}, sucesso={self.performance_metrics['successful_actions']}, falhas={self.performance_metrics['failed_actions']}, tempo_médio={self.performance_metrics['avg_execution_time']:.2f}s")
     
     def _learn_from_action(self, request: ActionRequest, decision_info: Dict[str, Any]):
         """Aprende com resultado da ação usando sistema biomimético"""
