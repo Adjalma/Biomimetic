@@ -314,7 +314,9 @@ def _ollama_unreachable_message(exc: BaseException, base_url: str) -> str:
 
 
 def _ollama_tags_reachable(base_url: str) -> bool:
-    if not requests:
+    try:
+        import requests
+    except ImportError:
         return False
     try:
         r = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=2)
