@@ -25,7 +25,9 @@ openai-whisper>=20231117  # ou pip install git+https://github.com/openai/whisper
 # (já coberto por transformers, spacy, nltk em requirements_unificado.txt)
 
 # SERIALIZAÇÃO DE DADOS PARA APRENDIZADO (Fase 10)
-pickle5>=0.0.11  # Para compatibilidade com Python 3.8+
+# pickle5 NÃO listar aqui: é backport só para Python <3.8; em 3.8+ o protocolo 5
+# já vem no módulo pickle padrão. Em 3.11–3.13 o wheel sdist tenta compilar extensão C
+# e falha sem MSVC. Se precisares de <3.8: pip install "pickle5>=0.0.11; python_version<'3.8'"
 dill>=0.3.7  # Serialização de objetos Python
 joblib>=1.1.0  # Já incluído
 
