@@ -271,3 +271,22 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+# Dados gerados do sistema evolutivo
+data/
+configs/
+genomes/
+
+# Configurações locais
+.env.local
+.env.evolution
+bio_console.env
+
+# Arquivos temporários e cache do projeto
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/

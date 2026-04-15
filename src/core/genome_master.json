@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "name": "BiomimeticEvolutionaryAI",
+    "version": "1.0.0",
+    "author": "Specialist AI Adjalma Aguiar"
+  },
+  "agent_graph": {
+    "nodes": [
+      {
+        "name": "input_processor",
+        "type": "input",
+        "specialist": "maestro"
+      },
+      {
+        "name": "legal_analysis",
+        "type": "specialist",
+        "specialist": "jurist",
+        "dependencies": [
+          "input_processor"
+        ]
+      },
+      {
+        "name": "financial_analysis",
+        "type": "specialist",
+        "specialist": "financial",
+        "dependencies": [
+          "input_processor"
+        ]
+      },
+      {
+        "name": "content_review",
+        "type": "specialist",
+        "specialist": "reviewer",
+        "dependencies": [
+          "legal_analysis",
+          "financial_analysis"
+        ]
+      },
+      {
+        "name": "critical_review",
+        "type": "specialist",
+        "specialist": "skeptic",
+        "dependencies": [
+          "content_review"
+        ]
+      },
+      {
+        "name": "knowledge_guardian",
+        "type": "specialist",
+        "specialist": "guardiao",
+        "dependencies": [
+          "critical_review"
+        ]
+      },
+      {
+        "name": "final_synthesis",
+        "type": "output",
+        "specialist": "maestro",
+        "dependencies": [
+          "knowledge_guardian"
+        ]
+      }
+    ]
+  }
+}
