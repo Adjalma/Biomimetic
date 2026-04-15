@@ -1,0 +1,67 @@
+===========================================
+SISTEMA BIOMIMÉTICO - INSTRUÇÕES
+===========================================
+
+PROBLEMA: "A conexão com localhost foi recusada" ou scripts não funcionam
+
+SOLUÇÃO RÁPIDA:
+1. Execute: fix_all.bat
+2. Siga as instruções na tela
+3. Mantenha a janela aberta
+
+===========================================
+PASSO A PASSO DETALHADO:
+
+1️⃣ ABRA O COMMAND PROMPT (CMD) COMO ADMINISTRADOR
+   - Pressione Win + R
+   - Digite: cmd
+   - Pressione Ctrl + Shift + Enter
+
+2️⃣ NAVEGUE ATÉ A PASTA DO PROJETO
+   cd "C:\Users\XBZF\Projetos Triarc\Biomimetic\Biomimetic"
+
+3️⃣ EXECUTE O SCRIPT DE CORREÇÃO
+   .\fix_all.bat
+
+4️⃣ SIGA AS INSTRUÇÕES NA TELA
+   - O script vai instalar tudo automaticamente
+   - No final, o backend vai iniciar
+   - MANTENHA ESSA JANELA ABERTA
+
+5️⃣ ACESSE O SISTEMA
+   - Em outro navegador, acesse: http://localhost:8000/docs
+   - Ou use: http://localhost:8000
+
+===========================================
+SCRIPTS DISPONÍVEIS:
+
+✅ fix_all.bat        - Corrige TUDO e inicia (RECOMENDADO)
+✅ install_essential.bat - Apenas instala dependências
+✅ run.bat            - Menu interativo
+✅ start_all.bat      - Inicia sistema automaticamente
+✅ start.ps1          - Script PowerShell (se batch falhar)
+✅ test_backend_fixed.bat - Testa o backend
+
+===========================================
+PROBLEMAS COMUNS E SOLUÇÕES:
+
+❌ "Python não encontrado"
+   → Instale Python 3.8+ e marque "Add Python to PATH"
+
+❌ "Não é reconhecido como comando interno"
+   → Use Command Prompt (cmd), não PowerShell
+   → Ou execute start.ps1 no PowerShell
+
+❌ "A conexão foi recusada"
+   → O backend não está rodando
+   → Execute fix_all.bat
+
+❌ Script fecha imediatamente
+   → Execute pelo Command Prompt (cmd)
+   → Ou adicione "pause" no final do script
+
+===========================================
+CONTATO:
+Se ainda tiver problemas, envie a SAÍDA COMPLETA do fix_all.bat
+
+===========================================
