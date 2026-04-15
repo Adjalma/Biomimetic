@@ -70,10 +70,34 @@ python src/core/evolution/evolution_api.py
 python iniciar_sistema.py main
 ```
 
-### **Dashboard Evolutivo**
+### **Dashboard Evolutivo (HTML Estático)**
 ```bash
 python src/core/evolution/evolution_dashboard.py --generate
 open evolution_dashboard.html  # Mac
+```
+
+### **Frontend Dashboard (Next.js - Interface Completa)**
+```bash
+# Navegue para a pasta frontend
+cd frontend
+
+# Instale dependências (primeira vez)
+npm install  # ou yarn install
+
+# Inicie o servidor de desenvolvimento
+npm run dev  # ou yarn dev
+```
+**Acesse:** http://localhost:3000
+
+**Script de inicialização rápida (Windows):**
+```powershell
+.\start_system.bat  # Menu interativo para backend + frontend
+```
+
+**Script de inicialização rápida (Linux/Mac):**
+```bash
+chmod +x start_system.sh
+./start_system.sh  # Menu interativo para backend + frontend
 ```
 
 ---
@@ -122,7 +146,8 @@ python src/core/evolution/simple_test.py
 ## 🎯 O QUE ESPERAR
 
 ✅ **API rodando:** http://localhost:8000/health → `{"status":"healthy"}`  
-✅ **Dashboard:** `evolution_dashboard.html` gerado  
+✅ **Dashboard HTML:** `evolution_dashboard.html` gerado  
+✅ **Dashboard Frontend (Next.js):** Interface completa em http://localhost:3000  
 ✅ **Evolução:** Ciclos automáticos de mutação e aprendizado  
 ✅ **Sistema autoevolutivo:** Modifica seu próprio código (genoma YAML)
 
