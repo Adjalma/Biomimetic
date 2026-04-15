@@ -93,6 +93,10 @@ npm run dev  # ou yarn dev
 ```powershell
 .\start_system.bat  # Menu interativo para backend + frontend
 ```
+**Script principal (setup.bat) - Recomendado:**
+```powershell
+.\setup.bat  # Menu completo: instalar, iniciar backend/frontend, verificar status
+```
 
 **Script de inicialização rápida (Linux/Mac):**
 ```bash
