@@ -22,6 +22,7 @@ Autor: Jarvis (OpenClaw)
 import json
 import time
 import random
+import sys
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import logging
@@ -460,4 +461,45 @@ async def health_check():
 # Função para executar a API
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import traceback
+    
+    print("=" * 60)
+    print("🧬 EVOLUTION API - INICIANDO")
+    print("=" * 60)
+    print(f"Data/Hora: {datetime.now().isoformat()}")
+    print(f"Porta: 8000")
+    print(f"Host: 0.0.0.0 (aceita conexões de qualquer IP)")
+    print("-" * 60)
+    
+    try:
+        # Testar se a aplicação está válida
+        print("Verificando aplicação FastAPI...")
+        print(f"  Rotas registradas: {len(app.routes)}")
+        
+        # Listar algumas rotas
+        for i, route in enumerate(app.routes[:5]):
+            path = getattr(route, 'path', 'N/A')
+            methods = getattr(route, 'methods', 'N/A')
+            print(f"  [{i+1}] {path} ({methods})")
+        
+        print("-" * 60)
+        print("Iniciando servidor Uvicorn...")
+        print("Pressione Ctrl+C para parar")
+        print("=" * 60)
+        
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        
+    except Exception as e:
+        print("❌ ERRO CRÍTICO AO INICIAR API:")
+        print(f"   Tipo: {type(e).__name__}")
+        print(f"   Mensagem: {e}")
+        print("\n🔍 Stack trace:")
+        traceback.print_exc()
+        print("=" * 60)
+        print("💡 SOLUÇÃO:")
+        print("1. Verifique se todas dependências estão instaladas")
+        print("2. Execute: pip install fastapi uvicorn pydantic numpy requests")
+        print("3. Ou use: .\\install_essential.bat")
+        print("=" * 60)
+        input("Pressione Enter para sair...")
+        sys.exit(1)
