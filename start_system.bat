@@ -78,7 +78,8 @@ call venv\Scripts\activate.bat
 start "API Evolution" cmd /k "cd /d %~dp0 && call venv\Scripts\activate.bat && python src/core/evolution/evolution_api.py"
 echo ✅ Backend iniciado.
 
-timeout /t 3 /nobreak >nul
+echo Aguardando 3 segundos...
+ping -n 3 127.0.0.1 > nul
 
 echo.
 echo 🎨 Iniciando Frontend...
