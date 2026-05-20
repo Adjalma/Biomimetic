@@ -1,0 +1,13 @@
+workflows:
+  mobile-build:
+    name: iOS & Android Build
+    max_build_duration: 60
+    environment:
+      node: 18
+      xcode: latest
+    scripts:
+      - npm ci
+      - cd android && ./gradlew assembleRelease
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
